@@ -1,0 +1,2319 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>thiqa · Gastos de obra</title>
+<meta name="theme-color" content="#1E4A72">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   Sistema visual thiqa
+   Azul estructura · naranja solo la acción principal y lo pendiente
+   Esquinas rectas · ritmo de 8 px · Outfit para cifras, Figtree para texto
+   ===================================================================== */
+:root{
+  --azul:#1E4A72;
+  --azul-osc:#173A5A;
+  --azul-cla:#2A5C8A;
+  --naranja:#F07E22;
+  --naranja-osc:#D96A12;
+  --naranja-suave:#FDE7D3;
+  --fondo:#F7F9FB;
+  --blanco:#FFFFFF;
+  --borde:#DDE3E9;
+  --auto:#F4F6F8;
+  --hover:#F0F4F8;
+  --tx:#1F2933;
+  --tx2:#5B6B7C;
+  --tx3:#8A99A8;
+  --ok:#1F7A5A;
+  --ok-suave:#E3F1EB;
+  --ttl:'Outfit',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --txt:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --side:236px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--fondo);color:var(--tx);
+  font:400 14px/1.55 var(--txt);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0;font-family:var(--ttl);font-weight:600;color:var(--azul);letter-spacing:-.01em}
+button,input,select,textarea{font-family:inherit;font-size:inherit}
+.num,.cifra{font-family:var(--ttl);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ---------------- estructura ---------------- */
+.app{display:flex;min-height:100vh}
+
+/* barra lateral azul */
+aside{
+  width:var(--side);flex:0 0 var(--side);background:var(--azul);
+  display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:80;
+}
+.marca{padding:24px 20px 20px;display:flex;align-items:center;gap:10px}
+.marca svg{width:58px;height:auto;display:block}
+.marca .wm{font-family:var(--ttl);font-weight:600;font-size:19px;letter-spacing:.16em;color:#fff;line-height:1}
+.marca .sb{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-top:4px}
+nav{padding:8px 0;flex:1;overflow-y:auto}
+.navlink{
+  display:flex;align-items:center;gap:9px;width:100%;
+  padding:12px 20px;border:0;border-left:4px solid transparent;background:transparent;
+  color:rgba(255,255,255,.78);font-size:14px;font-weight:400;text-align:left;cursor:pointer;
+}
+.navlink:hover{background:rgba(255,255,255,.06);color:#fff}
+.navlink.on{background:var(--azul-cla);border-left-color:var(--naranja);color:#fff;font-weight:600}
+.navlink .ct{
+  margin-left:auto;font-family:var(--ttl);font-weight:600;font-size:11px;
+  background:rgba(255,255,255,.16);color:#fff;padding:1px 7px;min-width:22px;text-align:center
+}
+.navlink.on .ct{background:rgba(0,0,0,.22)}
+.quien{padding:16px 20px;border-top:1px solid rgba(255,255,255,.14);font-size:12.5px;color:rgba(255,255,255,.62);line-height:1.45}
+.quien b{display:block;color:rgba(255,255,255,.9);font-weight:500;font-size:13px}
+
+/* zona de trabajo */
+.main{flex:1;margin-left:var(--side);min-width:0;display:flex;flex-direction:column}
+.topbar{
+  background:var(--blanco);border-bottom:1px solid var(--borde);
+  padding:14px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  position:sticky;top:0;z-index:60;min-height:66px;
+}
+.topbar h2{font-size:20px}
+.topbar .sub{font-size:12.5px;color:var(--tx3);margin-top:1px}
+.grow{flex:1}
+.contenido{padding:24px;flex:1}
+@media(max-width:960px){
+  :root{--side:0px}
+  aside{transform:translateX(-260px);transition:transform .22s;width:262px;flex-basis:262px}
+  aside.abierta{transform:none;box-shadow:0 0 0 100vmax rgba(23,58,90,.45)}
+  .main{margin-left:0}
+  .topbar{padding:12px 16px}
+  .contenido{padding:16px;padding-bottom:96px}
+  .solo-esc{display:none!important}
+}
+.hamb{display:none;width:40px;height:40px;border:1px solid var(--borde);background:var(--blanco);color:var(--azul);cursor:pointer;font-size:17px}
+@media(max-width:960px){.hamb{display:block}}
+
+/* ---------------- vistas ---------------- */
+.view{display:none}
+.view.on{display:block}
+
+/* ---------------- tarjetas ---------------- */
+.card{background:var(--blanco);border:1px solid var(--borde);padding:20px;margin-bottom:16px}
+.card.p0{padding:0}
+.card>h3,.tit{
+  font-family:var(--txt);font-size:11px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--tx3);margin:0 0 14px
+}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.split{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:16px;align-items:start}
+.mitad{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+@media(max-width:1100px){.split{grid-template-columns:1fr}}
+@media(max-width:820px){.g2,.g3,.g4,.mitad{grid-template-columns:1fr}}
+@media(min-width:821px) and (max-width:1200px){.g4{grid-template-columns:1fr 1fr}}
+
+/* ---------------- KPI ---------------- */
+.kpi{background:var(--blanco);border:1px solid var(--borde);padding:16px 18px}
+.kpi .k{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3)}
+.kpi .v{font-family:var(--ttl);font-weight:600;font-size:27px;line-height:1.15;color:var(--azul);margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.kpi .d{font-size:12px;color:var(--tx3);margin-top:3px}
+.kpi.alerta{border:2px solid var(--naranja)}
+.kpi.alerta .v{color:var(--naranja)}
+.kpi.mudo .v{color:var(--tx3)}
+.bar{height:6px;background:var(--auto);margin-top:8px}
+.bar i{display:block;height:100%;background:var(--azul)}
+
+/* ---------------- botones ---------------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:10px 16px;min-height:40px;border:1px solid var(--borde);
+  background:var(--blanco);color:var(--azul);font-weight:600;font-size:14px;cursor:pointer;
+  transition:background .12s,border-color .12s
+}
+.btn:hover{background:var(--hover);border-color:#c9d3dd}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.pri{background:var(--naranja);border-color:var(--naranja);color:#fff}
+.btn.pri:hover{background:var(--naranja-osc);border-color:var(--naranja-osc)}
+.btn.conf{background:var(--azul);border-color:var(--azul);color:#fff}
+.btn.conf:hover{background:var(--azul-osc);border-color:var(--azul-osc)}
+.btn.sec{background:var(--blanco);border-color:var(--azul);color:var(--azul)}
+.btn.sec:hover{background:var(--hover)}
+.btn.dan{border-color:#D8A0A0;color:#A33}
+.btn.dan:hover{background:#FDF0F0}
+.btn.gh{border-color:transparent;background:transparent;color:var(--tx2);font-weight:500}
+.btn.gh:hover{background:var(--hover);color:var(--azul)}
+.btn.sm{min-height:32px;padding:6px 11px;font-size:13px}
+.btn.blk{width:100%}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ---------------- formularios ---------------- */
+label.f{display:block;margin-bottom:16px}
+label.f>span{
+  display:block;font-size:10.5px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--tx3);margin-bottom:6px
+}
+input[type=text],input[type=number],input[type=date],input[type=password],select,textarea{
+  width:100%;padding:10px 12px;min-height:42px;border:1px solid var(--borde);
+  background:var(--blanco);color:var(--tx);outline:none;border-radius:0
+}
+input:focus,select:focus,textarea:focus{border-color:var(--naranja);box-shadow:inset 0 0 0 1px var(--naranja)}
+input[readonly],.auto{background:var(--auto);color:var(--tx2)}
+textarea{resize:vertical;min-height:84px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5}
+select{
+  appearance:none;padding-right:34px;
+  background-image:linear-gradient(45deg,transparent 50%,var(--tx2) 50%),linear-gradient(135deg,var(--tx2) 50%,transparent 50%);
+  background-position:calc(100% - 17px) 52%,calc(100% - 12px) 52%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat
+}
+.hint{font-size:12px;color:var(--tx3);margin-top:5px}
+.hint.err{color:var(--naranja);font-weight:500}
+.cifra-in input{font-family:var(--ttl);font-weight:600;font-size:16px}
+
+/* ---------------- etiquetas de estado ---------------- */
+.tag{
+  display:inline-block;padding:3px 8px;font-size:10.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;font-family:var(--txt)
+}
+.t-pagado{background:#E3EAF2;color:var(--azul)}
+.t-pendiente{background:var(--naranja-suave);color:var(--naranja-osc)}
+.t-alta{background:var(--ok-suave);color:var(--ok)}
+.t-media,.t-baja{background:var(--naranja-suave);color:var(--naranja-osc)}
+.t-nula{background:var(--auto);color:var(--tx3)}
+.t-info{background:#E3EAF2;color:var(--azul)}
+.t-ac{background:var(--naranja-suave);color:var(--naranja-osc)}
+
+/* ---------------- tablas ---------------- */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{
+  background:var(--fondo);font-size:10.5px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--tx3);text-align:left;padding:11px 14px;
+  border-bottom:1px solid var(--borde);white-space:nowrap
+}
+td{padding:12px 14px;border-bottom:1px solid var(--borde);white-space:nowrap;vertical-align:middle}
+tbody tr:nth-child(even){background:var(--fondo)}
+tbody tr:hover{background:var(--hover)}
+td.num,th.num{text-align:right;font-family:var(--ttl);font-weight:600;font-variant-numeric:tabular-nums}
+th.num{font-family:var(--txt)}
+td.clave{font-family:var(--ttl);font-weight:600;color:var(--azul)}
+td.wrap{white-space:normal;min-width:200px}
+tfoot td{background:var(--blanco);border-top:2px solid var(--azul);border-bottom:0;font-weight:600;color:var(--azul)}
+tfoot td.num{font-size:15px}
+.mini{font-size:12px;color:var(--tx3)}
+
+/* celular: cada fila se vuelve tarjeta, nunca scroll horizontal */
+@media(max-width:820px){
+  .tw{overflow:visible}
+  table.cards,table.cards tbody,table.cards tr,table.cards td{display:block;width:auto}
+  table.cards thead,table.cards tfoot tr td:empty{display:none}
+  table.cards tbody tr{
+    background:var(--blanco)!important;border:1px solid var(--borde);
+    margin:0 0 8px;padding:12px 14px
+  }
+  table.cards tbody tr:hover{background:var(--blanco)!important}
+  table.cards td{border:0;padding:3px 0;white-space:normal;display:flex;gap:10px;align-items:baseline}
+  table.cards td::before{
+    content:attr(data-l);flex:0 0 92px;font-size:10px;font-weight:600;
+    text-transform:uppercase;letter-spacing:.1em;color:var(--tx3)
+  }
+  table.cards td.num{justify-content:flex-start;text-align:left;font-size:17px}
+  table.cards td[data-l=""]::before{display:none}
+  table.cards tfoot{display:block}
+  table.cards tfoot td{display:flex;border-top:2px solid var(--azul);padding:12px 14px;background:var(--blanco)}
+  table.cards tfoot tr{display:block;background:var(--blanco)}
+}
+
+/* ---------------- zona de carga ---------------- */
+.dz{border:2px dashed var(--borde);background:var(--blanco);padding:28px 18px;text-align:center;cursor:pointer;transition:.14s}
+.dz:hover,.dz.hot{border-color:var(--naranja);background:#FFFBF7}
+.dz .ic{font-size:30px;line-height:1}
+.dz b{display:block;margin-top:10px;font-family:var(--ttl);font-weight:600;font-size:16px;color:var(--azul)}
+.dz span{display:block;font-size:12.5px;color:var(--tx3);margin-top:4px}
+
+/* cola de recibos */
+.queue{display:flex;gap:8px;overflow-x:auto;padding:12px 2px 4px}
+.qi{position:relative;flex:0 0 62px;height:82px;overflow:hidden;border:2px solid var(--borde);cursor:pointer;background:#fff}
+.qi img{width:100%;height:100%;object-fit:cover}
+.qi.on{border-color:var(--naranja)}
+.qi.done::after{
+  content:"✓";position:absolute;inset:0;display:grid;place-items:center;
+  background:rgba(30,74,114,.62);color:#fff;font-size:24px;font-weight:700
+}
+.qi .x{position:absolute;top:0;right:0;width:20px;height:20px;background:var(--azul);color:#fff;font-size:11px;line-height:20px;text-align:center}
+
+/* visor */
+.viewer{position:relative;background:var(--auto);border-bottom:1px solid var(--borde);min-height:230px;display:grid;place-items:center}
+.viewer canvas{max-width:100%;display:block;touch-action:none;cursor:crosshair}
+.viewer .empty{color:var(--tx3);font-size:13px;padding:56px 24px;text-align:center;line-height:1.6}
+.selbox{position:absolute;border:2px solid var(--naranja);background:rgba(240,126,34,.14);pointer-events:none;display:none}
+.vbar{display:flex;gap:6px;flex-wrap:wrap;padding:12px;border-bottom:1px solid var(--borde)}
+
+/* progreso */
+.prog{height:4px;background:var(--auto);overflow:hidden;margin:10px 0 6px;display:none}
+.prog.on{display:block}
+.prog i{display:block;height:100%;width:0;background:var(--naranja);transition:width .2s}
+.status{font-size:12.5px;color:var(--tx2);min-height:18px}
+
+/* chips */
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{
+  padding:5px 11px;background:var(--blanco);border:1px solid var(--borde);
+  font-size:12.5px;color:var(--tx);cursor:pointer
+}
+.chip:hover{border-color:var(--naranja);color:var(--naranja-osc)}
+.chip b{color:var(--tx3);margin-left:5px;font-weight:600}
+.chip.dep{background:var(--naranja-suave);border-color:var(--naranja-suave);color:var(--naranja-osc);cursor:default}
+
+/* pestañas de filtro */
+.ftabs{display:flex;gap:6px;flex-wrap:wrap}
+.ftab{padding:8px 14px;border:1px solid var(--borde);background:var(--blanco);color:var(--tx2);font-size:13px;font-weight:500;cursor:pointer}
+.ftab:hover{background:var(--hover)}
+.ftab.on{background:var(--azul);border-color:var(--azul);color:#fff;font-weight:600}
+
+/* avisos */
+.aviso{background:var(--auto);border-left:4px solid var(--naranja);padding:12px 14px;font-size:13.5px;color:var(--tx);margin-bottom:8px}
+.aviso.ok{border-left-color:var(--ok);background:var(--ok-suave);color:#17573F}
+.sep{height:1px;background:var(--borde);margin:18px 0}
+.fname{
+  font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--azul);
+  word-break:break-all;line-height:1.5;background:var(--auto);padding:9px 11px;border-left:3px solid var(--azul)
+}
+/* vacío */
+.vacio{text-align:center;padding:48px 24px}
+.vacio .ic{color:var(--naranja-suave);font-size:38px;line-height:1}
+.vacio h4{font-family:var(--ttl);font-size:17px;margin:12px 0 6px}
+.vacio p{color:var(--tx3);font-size:13.5px;margin:0 0 18px}
+
+/* aviso tipo toast: barra azul */
+#toast{
+  position:fixed;left:0;right:0;bottom:0;z-index:200;background:var(--azul);color:#fff;
+  padding:14px 20px;font-size:14px;transform:translateY(110%);transition:transform .26s;
+  display:flex;align-items:center;gap:12px
+}
+#toast.on{transform:none}
+#toast.bad{background:var(--naranja-osc)}
+#toast.warn{background:var(--naranja)}
+#toast b{font-weight:600}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:150;background:rgba(23,58,90,.55);display:none;place-items:center;padding:16px;overflow:auto}
+.modal.on{display:grid}
+.modal .box{background:var(--blanco);border:1px solid var(--borde);padding:24px;max-width:620px;width:100%}
+.modal h2{font-size:21px;margin-bottom:8px}
+.modal ol{padding-left:22px;font-size:14px;line-height:1.8;color:var(--tx);margin:14px 0}
+.modal ol b{color:var(--azul)}
+.zt{background:var(--auto);border:1px solid var(--borde);padding:12px;font-family:ui-monospace,Menlo,monospace;font-size:13px;white-space:pre-wrap;margin-bottom:14px;max-height:180px;overflow:auto}
+
+/* barra fija de acción (celular) */
+.savebar{
+  position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--blanco);
+  border-top:1px solid var(--borde);padding:10px 16px;display:none;
+  box-shadow:0 -3px 14px rgba(30,74,114,.08)
+}
+.savebar.on{display:block}
+.savebar .in{max-width:1180px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.savebar .et{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--tx3)}
+.savebar .tot{font-family:var(--ttl);font-weight:600;font-size:20px;color:var(--azul);font-variant-numeric:tabular-nums}
+.savebar .btn{min-height:44px}
+@media(min-width:961px){.savebar .solo-cel{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ============ barra lateral ============ -->
+<aside id="side">
+  <div class="marca">
+    <svg viewBox="0 0 100 62" fill="none" aria-hidden="true">
+      <path d="M4 47 L50 9 L96 47" stroke="#fff" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M56 22 L70 11 L84 22" stroke="#fff" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M4 47 L4 57 M96 47 L96 57" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <div class="wm">THIQA</div>
+      <div class="sb">Gastos de obra</div>
+    </div>
+  </div>
+  <nav id="nav">
+    <button class="navlink on" data-v="cap">Capturar recibo</button>
+    <button class="navlink" data-v="reg">Gastos registrados <span class="ct" id="bReg">0</span></button>
+    <button class="navlink" data-v="res">Reportes</button>
+    <button class="navlink" data-v="cat">Catálogos</button>
+    <button class="navlink" data-v="dat">Exportar</button>
+  </nav>
+  <div class="quien">
+    <b id="quienNom">Control de obra</b>
+    <span id="quienSub">Administración</span>
+  </div>
+</aside>
+
+<!-- ============ zona de trabajo ============ -->
+<div class="main">
+  <header class="topbar">
+    <button class="hamb" id="btnMenu" aria-label="Menú">☰</button>
+    <div>
+      <h2 id="tbTitle">Capturar recibo</h2>
+      <div class="sub" id="tbSub">Toma la foto y la app llena los datos</div>
+    </div>
+    <div class="grow"></div>
+    <button class="btn sm gh" id="btnAyuda">Cómo se usa</button>
+    <button class="btn pri solo-esc" id="tbAccion">Guardar gasto</button>
+  </header>
+
+  <div class="contenido">
+
+<!-- ================= CAPTURAR ================= -->
+<section class="view on" id="v-cap">
+  <div id="storeWarn"></div>
+
+  <div class="card">
+    <div class="dz" id="dz">
+      <div class="ic">📄</div>
+      <b>Toma foto o arrastra los recibos</b>
+      <span>Varios a la vez · JPG, PNG, HEIC, WEBP</span>
+    </div>
+    <input type="file" id="fileIn" accept="image/*" multiple hidden>
+    <input type="file" id="fileCam" accept="image/*" capture="environment" multiple hidden>
+    <div class="row" style="margin-top:12px">
+      <button class="btn conf" id="btnCam">Tomar foto</button>
+      <button class="btn" id="btnFile">Elegir archivos</button>
+      <div class="grow"></div>
+      <span class="mini" id="qInfo"></span>
+    </div>
+    <div class="queue" id="queue"></div>
+  </div>
+
+  <div class="split">
+    <div>
+      <div class="card p0">
+        <div class="viewer" id="viewer">
+          <div class="empty" id="vEmpty">
+            Sube un recibo para empezar.<br>
+            <span class="mini">Después puedes marcar con el dedo la zona del monto<br>para que la lea con precisión.</span>
+          </div>
+          <canvas id="cv" hidden></canvas>
+          <div class="selbox" id="selbox"></div>
+        </div>
+        <div class="vbar">
+          <button class="btn sm conf" id="btnOcrAll" disabled>Leer todo</button>
+          <button class="btn sm sec" id="btnOcrZone" disabled>Leer zona marcada</button>
+          <button class="btn sm" id="btnVision" disabled>Claude Vision</button>
+          <button class="btn sm gh" id="btnRot" disabled>Girar</button>
+          <button class="btn sm gh" id="btnBw" disabled>Contraste</button>
+          <button class="btn sm gh" id="btnClear" disabled>Quitar zona</button>
+        </div>
+        <div style="padding:12px">
+          <div class="prog" id="prog"><i id="progBar"></i></div>
+          <div class="status" id="ocrStatus"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Texto leído · se puede corregir</h3>
+        <textarea id="ocrText" rows="9" placeholder="Aquí aparece el texto del recibo. Corrígelo y vuelve a interpretarlo, o escríbelo a mano si la foto salió muy dañada."></textarea>
+        <div class="row" style="margin-top:10px">
+          <button class="btn sm sec" id="btnReparse">Volver a interpretar</button>
+          <span class="mini" id="parseInfo"></span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>Datos del gasto <span id="ocrFlag"></span></h3>
+        <div class="grid g2">
+          <label class="f"><span>Obra</span>
+            <select id="f_obra"></select>
+            <div class="hint" id="hObra"></div>
+          </label>
+          <label class="f"><span>ID Operación</span>
+            <input type="text" id="f_id" class="auto" placeholder="THQ-023">
+            <div class="hint">Lo pone el sistema según la obra</div>
+          </label>
+        </div>
+        <div class="grid g2">
+          <label class="f"><span>Fecha del gasto <span id="cFecha"></span></span>
+            <input type="date" id="f_fecha">
+          </label>
+          <label class="f cifra-in"><span>Monto <span id="cMonto"></span></span>
+            <input type="text" id="f_monto" inputmode="decimal" placeholder="$ 0.00">
+            <div class="hint" id="hMonto"></div>
+          </label>
+        </div>
+        <label class="f"><span>Concepto del gasto</span>
+          <select id="f_concepto"></select>
+        </label>
+        <label class="f"><span>Descripción detallada</span>
+          <input type="text" id="f_desc" placeholder="Pega Piso, Rodilleras, Cuña Chica">
+          <div class="chips" id="chipsDesc" style="margin-top:8px"></div>
+        </label>
+        <div class="grid g2">
+          <label class="f"><span>Pagado por</span>
+            <select id="f_por"></select>
+          </label>
+          <label class="f"><span>Pagado a</span>
+            <input type="text" id="f_a" list="dlProv" placeholder="Proveedor o maestro">
+            <datalist id="dlProv"></datalist>
+          </label>
+        </div>
+        <div class="grid g3">
+          <label class="f"><span>Forma de pago</span>
+            <select id="f_forma"></select>
+          </label>
+          <label class="f"><span>Estatus</span>
+            <select id="f_estatus"><option>Pagado</option><option>Pendiente</option></select>
+          </label>
+          <label class="f"><span>Autorizado por</span>
+            <select id="f_aut"><option>Dirección</option><option>Obra</option></select>
+          </label>
+        </div>
+        <div class="grid g2">
+          <label class="f"><span>Línea de pago</span>
+            <input type="text" id="f_linea" value="-">
+          </label>
+          <label class="f"><span>Comentario</span>
+            <input type="text" id="f_com" placeholder="Opcional">
+          </label>
+        </div>
+        <div class="sep"></div>
+        <div class="tit" style="margin-bottom:6px">Nombre del comprobante</div>
+        <div class="fname" id="fnamePrev">—</div>
+        <div class="hint">Con este nombre se guarda la foto en el ZIP y se escribe en el Excel.</div>
+        <div class="sep"></div>
+        <div class="row">
+          <button class="btn pri" id="btnSave">Guardar gasto</button>
+          <button class="btn sec" id="btnSaveNext">Guardar y siguiente</button>
+          <button class="btn gh" id="btnReset">Limpiar</button>
+          <span class="mini" id="editInfo"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= REGISTROS ================= -->
+<section class="view" id="v-reg">
+  <div class="grid g4" id="regKpis"></div>
+  <div class="card">
+    <div class="ftabs" id="fltabs" style="margin-bottom:16px">
+      <button class="ftab on" data-est="">Todos</button>
+      <button class="ftab" data-est="Pagado">Pagados</button>
+      <button class="ftab" data-est="Pendiente">Pendientes</button>
+    </div>
+    <div class="grid g4">
+      <label class="f" style="margin:0"><span>Obra</span><select id="fl_obra"><option value="">Todas</option></select></label>
+      <label class="f" style="margin:0"><span>Concepto</span><select id="fl_con"><option value="">Todos</option></select></label>
+      <label class="f" style="margin:0"><span>Desde</span><input type="date" id="fl_d1"></label>
+      <label class="f" style="margin:0"><span>Hasta</span><input type="date" id="fl_d2"></label>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <label class="f" style="margin:0;flex:1;min-width:220px"><span>Buscar</span><input type="text" id="fl_q" placeholder="Proveedor, descripción, ID…"></label>
+      <select id="fl_est" hidden><option value=""></option><option>Pagado</option><option>Pendiente</option></select>
+      <button class="btn sm gh" id="btnFlClear" style="margin-top:20px">Quitar filtros</button>
+    </div>
+  </div>
+  <div class="card p0">
+    <div class="tw"><table id="tReg" class="cards"></table></div>
+  </div>
+</section>
+
+<!-- ================= RESUMEN ================= -->
+<section class="view" id="v-res">
+  <div class="grid g4" id="resKpis"></div>
+  <div class="card" id="alertas"></div>
+  <div class="mitad">
+    <div class="card p0"><div class="tw"><table id="tPorObra"></table></div></div>
+    <div class="card p0"><div class="tw"><table id="tPorConcepto"></table></div></div>
+  </div>
+  <div class="mitad">
+    <div class="card p0"><div class="tw"><table id="tPorProv"></table></div></div>
+    <div class="card p0"><div class="tw"><table id="tPorMes"></table></div></div>
+  </div>
+</section>
+
+<!-- ================= CATALOGOS ================= -->
+<section class="view" id="v-cat">
+  <div class="mitad">
+    <div class="card">
+      <h3>Obras y su ID de operación</h3>
+      <p class="hint" style="margin:-8px 0 14px">Cada obra es una hoja del Excel. El ID se copia solo al capturar.</p>
+      <div class="tw"><table id="tObras"></table></div>
+      <div class="sep"></div>
+      <div class="grid g3">
+        <label class="f" style="margin:0"><span>Nombre de obra</span><input type="text" id="nb_obra" placeholder="LOMAS DEL COLORÍN"></label>
+        <label class="f" style="margin:0"><span>ID Operación</span><input type="text" id="nb_id" placeholder="THQ-030"></label>
+        <label class="f" style="margin:0"><span>&nbsp;</span><button class="btn sec blk" id="btnAddObra">Agregar obra</button></label>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>Conceptos de gasto</h3>
+        <div class="chips" id="chConcepto"></div>
+        <div class="row" style="margin-top:12px">
+          <input type="text" id="nb_con" placeholder="Nuevo concepto" style="flex:1">
+          <button class="btn sec" id="btnAddCon">Agregar</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Quién paga (interno)</h3>
+        <div class="chips" id="chPor"></div>
+        <div class="row" style="margin-top:12px">
+          <input type="text" id="nb_por" placeholder="Nombre" style="flex:1">
+          <button class="btn sec" id="btnAddPor">Agregar</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Formas de pago</h3>
+        <div class="chips" id="chForma"></div>
+        <div class="row" style="margin-top:12px">
+          <input type="text" id="nb_forma" placeholder="Nueva forma" style="flex:1">
+          <button class="btn sec" id="btnAddForma">Agregar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Proveedores y maestros <span class="tag t-info" id="nProv">0</span></h3>
+    <p class="hint" style="margin:-8px 0 14px">La app usa esta lista para reconocer el proveedor en la foto. Mientras más completa, mejor lee.</p>
+    <div class="chips" id="chProv"></div>
+    <div class="row" style="margin-top:14px">
+      <input type="text" id="nb_prov" placeholder="Nuevo proveedor o maestro" style="flex:1;max-width:340px">
+      <button class="btn sec" id="btnAddProv">Agregar</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= EXPORTAR ================= -->
+<section class="view" id="v-dat">
+  <div class="mitad">
+    <div class="card">
+      <h3>Entregables</h3>
+      <p class="hint" style="margin:-8px 0 16px">El Excel sale con una hoja por obra y las mismas 13 columnas que ya usan, para pegarlo directo en el archivo de la dirección.</p>
+      <button class="btn pri blk" id="btnXlsx" style="margin-bottom:8px">Descargar Excel (.xlsx)</button>
+      <button class="btn sec blk" id="btnZip" style="margin-bottom:8px">Descargar ZIP de comprobantes</button>
+      <button class="btn blk" id="btnCsv">Descargar CSV plano</button>
+      <div class="sep"></div>
+      <h3>Respaldo</h3>
+      <button class="btn blk" id="btnBackup" style="margin-bottom:8px">Guardar respaldo (.json)</button>
+      <button class="btn blk" id="btnRestore">Restaurar respaldo</button>
+      <input type="file" id="fileJson" accept=".json,application/json" hidden>
+      <div class="sep"></div>
+      <button class="btn dan blk" id="btnWipe">Borrar todo</button>
+    </div>
+    <div>
+      <div class="card">
+        <h3>Estado</h3>
+        <div id="estado" class="mini" style="line-height:1.9"></div>
+      </div>
+      <div class="card">
+        <h3>Claude Vision · opcional</h3>
+        <p class="hint" style="margin:-8px 0 16px">El OCR del navegador es gratis y funciona sin señal una vez cargado. Para tickets térmicos muy arrugados o montos altos, Claude Vision lee mucho mejor. Necesita una API key de Anthropic.</p>
+        <label class="f"><span>API Key de Anthropic</span>
+          <input type="password" id="s_key" placeholder="sk-ant-…">
+          <div class="hint">Se guarda solo en este navegador, en tu equipo.</div>
+        </label>
+        <label class="f"><span>Modelo</span>
+          <select id="s_model">
+            <option value="claude-sonnet-5">claude-sonnet-5 · recomendado</option>
+            <option value="claude-opus-5">claude-opus-5 · máxima precisión</option>
+            <option value="claude-haiku-4-5-20251001">claude-haiku-4.5 · más económico</option>
+          </select>
+        </label>
+        <label class="f"><span>Idioma del OCR local</span>
+          <select id="s_lang"><option value="spa">Español</option><option value="spa+eng">Español + Inglés</option><option value="eng">Inglés</option></select>
+        </label>
+        <button class="btn sec blk" id="btnSaveCfg">Guardar configuración</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+  </div><!-- /contenido -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<div class="savebar" id="savebar">
+  <div class="in">
+    <div class="solo-cel">
+      <div class="et">Capturado</div>
+      <div class="tot" id="sbTotal">$0.00</div>
+    </div>
+    <div class="grow"></div>
+    <button class="btn sec" id="sbNext">Y siguiente</button>
+    <button class="btn pri" id="sbSave">Guardar gasto</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div class="modal" id="mAyuda"><div class="box">
+  <h2>Cómo se usa</h2>
+  <p class="hint" style="font-size:13.5px;color:var(--tx2)">Cuatro pasos, de la foto al Excel.</p>
+  <ol>
+    <li><b>Sube los recibos</b> del día. Puedes seleccionar varios; se forman en una fila abajo.</li>
+    <li>Pica <b>Leer todo</b>. Si el monto o la fecha salen mal, <b>arrastra un recuadro</b> sobre ese dato en la foto y pica <b>Leer zona marcada</b>. Eso reemplaza el marcatextos: no hay que rayar los tickets.</li>
+    <li>Revisa los campos. <span class="tag t-alta">Alta</span> significa que encontró la palabra TOTAL junto al número; <span class="tag t-baja">revisar</span> quiere decir que lo dedujo y hay que verificarlo.</li>
+    <li><b>Guardar y siguiente</b> pasa al recibo que sigue sin perder la obra ni quién pagó.</li>
+  </ol>
+  <div class="aviso">La primera vez que uses <b>Leer todo</b> necesitas internet: se descarga el motor de OCR (unos 15 MB) y queda guardado. Después funciona sin señal.</div>
+  <div class="sep"></div>
+  <button class="btn pri blk" id="btnCerrarAyuda">Entendido</button>
+</div></div>
+
+<script>
+
+/* =====================================================================
+   Control de Gastos de Obra — app de captura con OCR
+   Un solo archivo. Los datos se quedan en este navegador.
+   ===================================================================== */
+'use strict';
+
+/* ---------------------------------------------------------------
+   0. CARGA DE LIBRERIAS BAJO DEMANDA (con respaldo entre CDNs)
+   La app abre y captura a mano sin internet; solo el OCR y las
+   exportaciones necesitan bajar su librería la primera vez.
+   --------------------------------------------------------------- */
+function cargarScript(urls, listo) {
+  return new Promise(resolve => {
+    let i = 0;
+    (function intenta() {
+      if (listo()) return resolve(true);
+      if (i >= urls.length) return resolve(false);
+      const s = document.createElement('script');
+      s.src = urls[i++];
+      s.async = true;
+      s.onload = () => listo() ? resolve(true) : intenta();
+      s.onerror = intenta;
+      document.head.appendChild(s);
+    })();
+  });
+}
+const LIBS = {
+  tesseract: {
+    listo: () => typeof Tesseract !== 'undefined',
+    urls: [
+      'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
+      'https://unpkg.com/tesseract.js@5.1.1/dist/tesseract.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js',
+      'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'
+    ],
+    nombre: 'el motor de OCR'
+  },
+  xlsx: {
+    listo: () => typeof XLSX !== 'undefined',
+    urls: [
+      'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js',
+      'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+      'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'
+    ],
+    nombre: 'la librería de Excel'
+  },
+  jszip: {
+    listo: () => typeof JSZip !== 'undefined',
+    urls: [
+      'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+      'https://unpkg.com/jszip@3.10.1/dist/jszip.min.js'
+    ],
+    nombre: 'la librería de ZIP'
+  }
+};
+async function necesito(cual) {
+  const L = LIBS[cual];
+  if (L.listo()) return true;
+  const ok = await cargarScript(L.urls, L.listo);
+  if (!ok) throw new Error('No pude descargar ' + L.nombre + '. Conéctate a internet una vez y vuelve a intentar.');
+  return true;
+}
+
+/* ---------------------------------------------------------------
+   1. CATALOGOS INICIALES (tomados del Excel "Control De Gastos De Obra")
+   --------------------------------------------------------------- */
+const DEF = {
+  obras: [
+    ['SENDERO REAL','THQ-023'], ['LOMAS DEL COLORÍN','THQ-025'], ['MONTE MARIA',''],
+    ['FUENTE MEDESIS',''], ['LA FORTUNA','THQ-022'], ['VALLE DE AOSTAS',''],
+    ['CIRCUITO AGUACATE','THQ-020'], ['SANTA ANGELINA','THQ-029'], ['RUBIDO','RUBIDIO'],
+    ['SAN RODRIGO','THQ-024'], ['LA PURISIMA','THQ-021'], ['CHULAVISTA','THQ-018'],
+    ['TICKETS DIGITALES','DIGITAL'], ['LIMÓN','THQ-028'], ['TEQUILA','EXT-002'],
+    ['VIATICOS','EXTERNO'], ['VALLE DE LAS HAYAS','EXT-009']
+  ],
+  conceptos: ['Materiales','Mano de Obra','Mano de Obra y Materiales','Transporte','Alimentos','Herramienta','Papelería','Insumos'],
+  pagadores: ['Luis','Dirección','Fatima'],
+  formas: ['Efectivo','Transferencia','Deposito','Tarjeta Debito','Tarjeta Credito','Tarjeta','NA'],
+  proveedores: ["ABARROTES VILLASEDOR","ADRIANA GUTIÉRREZ SOLÍS","AKRON","Alejandro Hernandez","Amazon","AUTOZONE","CASTHER","Cerrajeria Omarsito","COMEX","CONSTRURAMA","DOMOS COPERNICO","Ernesto Gabriel B","Externo","FERREPINTURAS MIRAMAR","FERRETERÍA 363","FERRETERIA ARCOIRIS","FERRETERIA DON ROO","Ferreteria el General","FERRETERIA EL PARQUE ROJO","FERRETERIA MAAS","Ferreteria Miramar","FERRETERIA RROIDA","FERRETERÍA TLAPALERÍA FT AGAVES","FERRETERIA Y AZULEJOS","FERRETLAPALERIA AVILA","Francisco","FRANCISCO AGUILERA","Garage J.H.","GASOLINERA","Grifer","La Cara del Plomero","LIZAR","LLANTEK","LOMAS DEL MIRADOR","Luminor LED","MERCADO LIBRE","MOTO WHEELS","OPEN LED","OXXO","PECHUGON","PRISA","RUDOK","SERVICIO RAYO","Tejas y Ladrillos","THE HOME DEPOT","TIENDA EXTERNA","TLAPALERIA RIO","Tlapalería Sao Paulo","TRUPER","VIDRIO, ALUMINIO Y HERRERÍA"]
+};
+const COLS = ['ID Operación','Concepto del Gasto','Descripción Detallada','Fecha limite de Gasto','Monto ($)','Pagado por (interno)','Pagado a (externo)','Forma de Pago','Linea de pago','Comprobante Digital (link Drive)','Autorizado por','Estatus','Comentario'];
+
+/* ---------------------------------------------------------------
+   2. ESTADO Y PERSISTENCIA
+   --------------------------------------------------------------- */
+const LS = 'cgo_v1';
+let S = {
+  registros: [],
+  obras: DEF.obras.map(o => ({ nombre: o[0], id: o[1] })),
+  conceptos: DEF.conceptos.slice(),
+  pagadores: DEF.pagadores.slice(),
+  formas: DEF.formas.slice(),
+  proveedores: DEF.proveedores.slice(),
+  cfg: { key: '', model: 'claude-sonnet-5', lang: 'spa', obraUlt: '', porUlt: '' }
+};
+
+function save() {
+  try {
+    localStorage.setItem(LS, JSON.stringify(S));
+    return true;
+  } catch (e) { toast('No se pudo guardar en este navegador: ' + e.message, 'bad'); return false; }
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(LS);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    S = Object.assign(S, o);
+    S.cfg = Object.assign({ key: '', model: 'claude-sonnet-5', lang: 'spa', obraUlt: '', porUlt: '' }, o.cfg || {});
+  } catch (e) { console.warn('load', e); }
+}
+
+/* --- imagenes: IndexedDB con respaldo en memoria --- */
+const MEM = new Map();
+let DB = null, dbOk = false;
+function openDB() {
+  return new Promise(res => {
+    let rq;
+    try { rq = indexedDB.open('cgo_imgs', 1); } catch (e) { return res(false); }
+    rq.onupgradeneeded = () => { rq.result.createObjectStore('imgs'); };
+    rq.onsuccess = () => { DB = rq.result; dbOk = true; res(true); };
+    rq.onerror = () => res(false);
+    setTimeout(() => res(dbOk), 2500);
+  });
+}
+function imgPut(k, v) {
+  MEM.set(k, v);
+  if (!dbOk) return Promise.resolve(false);
+  return new Promise(res => {
+    try {
+      const t = DB.transaction('imgs', 'readwrite');
+      t.objectStore('imgs').put(v, k);
+      t.oncomplete = () => res(true); t.onerror = () => res(false);
+    } catch (e) { res(false); }
+  });
+}
+function imgGet(k) {
+  if (MEM.has(k)) return Promise.resolve(MEM.get(k));
+  if (!dbOk) return Promise.resolve(null);
+  return new Promise(res => {
+    try {
+      const r = DB.transaction('imgs', 'readonly').objectStore('imgs').get(k);
+      r.onsuccess = () => { if (r.result) MEM.set(k, r.result); res(r.result || null); };
+      r.onerror = () => res(null);
+    } catch (e) { res(null); }
+  });
+}
+function imgDel(k) {
+  MEM.delete(k);
+  if (dbOk) { try { DB.transaction('imgs', 'readwrite').objectStore('imgs').delete(k); } catch (e) {} }
+}
+
+/* ---------------------------------------------------------------
+   3. HELPERS
+   --------------------------------------------------------------- */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = n => '$' + (Number(n) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+function toast(msg, kind) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'on' + (kind ? ' ' + kind : '');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { t.className = ''; }, kind === 'bad' ? 5200 : 3000);
+}
+function fechaMX(iso) {
+  if (!iso) return '';
+  const p = String(iso).split('-');
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
+}
+function limpiaNombre(s) {
+  return String(s || '')
+    .replace(/[\/\\:*?"<>|#]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+/* Convención observada en el Excel:
+   COMPROBANTE DE PAGO_PROVEEDOR_CASA <OBRA>_DESCRIPCION */
+function etiquetaObra(obra) {
+  const o = (obra || '').toUpperCase().trim();
+  if (!o) return 'SIN OBRA';
+  if (/^(VIATICOS|VIÁTICOS|TICKETS DIGITALES|DIGITAL)/.test(o)) return o;
+  return 'CASA ' + o;
+}
+function nombreComprobante(r) {
+  const prov = limpiaNombre(r.pagado_a || 'EXTERNO').toUpperCase();
+  const obra = limpiaNombre(etiquetaObra(r.obra)).toUpperCase();
+  const desc = limpiaNombre(r.descripcion || r.concepto || '').toUpperCase().slice(0, 60);
+  return `COMPROBANTE DE PAGO_${prov}_${obra}_${desc}`;
+}
+
+/* --- parser de recibos --- */
+/* =====================================================================
+   parser.js — Extraccion de datos de recibos mexicanos a partir de texto
+   OCR. Se usa igual en Node (pruebas) y en el navegador (la app).
+   ===================================================================== */
+(function (root) {
+  'use strict';
+
+  // ---------- utilidades ----------
+  function norm(s) {
+    return (s || '')
+      .toString()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toUpperCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  const MESES = {
+    ENE: 1, ENERO: 1, JAN: 1,
+    FEB: 2, FEBRERO: 2,
+    MAR: 3, MARZO: 3,
+    ABR: 4, ABRIL: 4, APR: 4,
+    MAY: 5, MAYO: 5,
+    JUN: 6, JUNIO: 6,
+    JUL: 7, JULIO: 7,
+    AGO: 8, AGOSTO: 8, AUG: 8,
+    SEP: 9, SEPT: 9, SEPTIEMBRE: 9,
+    OCT: 10, OCTUBRE: 10,
+    NOV: 11, NOVIEMBRE: 11,
+    DIC: 12, DICIEMBRE: 12, DEC: 12
+  };
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function iso(y, m, d) { return `${y}-${pad(m)}-${pad(d)}`; }
+
+  function validDate(y, m, d) {
+    if (!(y >= 2018 && y <= 2035)) return false;
+    if (!(m >= 1 && m <= 12)) return false;
+    if (!(d >= 1 && d <= 31)) return false;
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    return dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+  }
+
+  function fixYear(y) {
+    y = parseInt(y, 10);
+    if (y < 100) y += y < 70 ? 2000 : 1900;
+    return y;
+  }
+
+  // ---------- FECHA ----------
+  // Devuelve { value:'YYYY-MM-DD', raw, score } o null
+  function parseFecha(text) {
+    const cands = [];
+    const lines = (text || '').split(/\r?\n/);
+
+    lines.forEach((line, idx) => {
+      const L = norm(line);
+      // Bonus si la linea menciona explicitamente la fecha del documento
+      let bonus = 0;
+      if (/\bFECHA\b/.test(L)) bonus += 40;
+      if (/FECHA (DE )?(COMPRA|OPERACION|APLICACION|IMPRESION|Y HORA)/.test(L)) bonus += 25;
+      if (/VIGENCIA|VENCE|CADUCA|VALIDEZ|CERTIFICACION/.test(L)) bonus -= 60;
+      // Penaliza lineas que son claramente domicilio / identificadores
+      if (/\bC\.?P\.?\b|\bCOL\.?\b|\bAV\b|AVENIDA|CALLE|RFC|FOLIO|AUTORIZ|TELEFONO|CUENTA|TARJETA/.test(L)) bonus -= 30;
+      // Penaliza si va al final del ticket (letra chica legal)
+      const posBonus = idx < lines.length * 0.75 ? 5 : 0;
+
+      let m;
+
+      // yyyy-mm-dd  /  yyyy/mm/dd
+      const re1 = /\b(20\d{2})[-\/.](\d{1,2})[-\/.](\d{1,2})\b/g;
+      while ((m = re1.exec(line))) {
+        const y = +m[1], mo = +m[2], d = +m[3];
+        if (validDate(y, mo, d)) cands.push({ value: iso(y, mo, d), raw: m[0], score: 60 + bonus + posBonus });
+      }
+
+      // dd-mm-yyyy / dd/mm/yy  (formato mexicano: dia primero)
+      const re2 = /\b(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})\b/g;
+      while ((m = re2.exec(line))) {
+        const d = +m[1], mo = +m[2], y = fixYear(m[3]);
+        if (validDate(y, mo, d)) cands.push({ value: iso(y, mo, d), raw: m[0], score: 55 + bonus + posBonus });
+      }
+
+      // dd/JUL/26  •  15/JUL/2026
+      const re3 = /\b(\d{1,2})[-\/. ]([A-ZÑ]{3,10})[-\/. ](\d{2,4})\b/gi;
+      while ((m = re3.exec(line))) {
+        const mo = MESES[norm(m[2])];
+        if (!mo) continue;
+        const d = +m[1], y = fixYear(m[3]);
+        if (validDate(y, mo, d)) cands.push({ value: iso(y, mo, d), raw: m[0], score: 65 + bonus + posBonus });
+      }
+
+      // 16 DE JULIO 2026  •  Lunes 20 Julio 2026  •  20 de julio de 2026
+      const re4 = /\b(\d{1,2})\s+(?:DE\s+)?([A-ZÑ]{3,10})\s+(?:DE\s+)?(20\d{2})\b/gi;
+      while ((m = re4.exec(line))) {
+        const mo = MESES[norm(m[2])];
+        if (!mo) continue;
+        const d = +m[1], y = +m[3];
+        if (validDate(y, mo, d)) cands.push({ value: iso(y, mo, d), raw: m[0], score: 70 + bonus + posBonus });
+      }
+    });
+
+    if (!cands.length) return null;
+    cands.sort((a, b) => b.score - a.score);
+    return cands[0];
+  }
+
+  // ---------- MONTO ----------
+  const RE_MONEY = /\$?\s*(\d{1,3}(?:[,\s]\d{3})+(?:\.\d{1,2})?|\d+\.\d{2}|\d{1,6})\b/g;
+
+  function toNumber(s) {
+    return parseFloat(String(s).replace(/[\s,]/g, ''));
+  }
+
+  // Etiquetas que NUNCA son el total del documento
+  const NEG = /(CAMBIO|AHORRO|SUBTOTAL|I\.?\s?V\.?\s?A\b|PROPINA|COMISI[OÓ]N|PRECIO NORMAL|OFERTA|RECIBIDO|INGRESAD[OA]|TOTAL DE DOCUMENTOS|CARGO CUENTA|DENOMINACI[OÓ]N|LITROS|UNITARIO|SALDO|ANTICIPO|DESCUENTO|RETENCI[OÓ]N|ISR)/;
+  // Lineas que son identificadores, no dinero
+  const IDLINE = /(FOLIO|AUTORIZ|\bAUT\b|TEL[EÉ]FONO|\bTEL\b|CLAVE|ID CANAL|REFERENCIA|\bSEC\b|\bNA:|\bUA:|LOTE|\bOPER\b|TICKET|\bCAJA\b|CUENTA|TARJETA|\bRFC\b|\bC\.?P\.?\b|N[UÚ]MERO|\bNO\.?\s|BARCODE|CERTIFICAD|SERIE|ARQC|\bTC\b|\bAID\b|EQUIPO|SUCURSAL|VIGENCIA|CADENA|SELLO|CP\b|IDENTIFICACI[OÓ]N|CANTIDAD U|EXP)/;
+  // Etiquetas de total (nivel 1)
+  const T1 = /(\bTOTAL\b|\bIMPORTE\b|DEPOSITASTE|DEP[OÓ]SITO|DEPOSITO|\bMONTO\b|\bCANTIDAD\b|\bPRECIO\b|A PAGAR|TOTAL PESOS|IMPORTE DEPOSITADO|EFEC\.? DEPOSITADO)/;
+  // Etiquetas de pago (nivel 2)
+  const T2 = /(EFECTIVO|TRANSFERENCIA|DEBITO|CREDITO|TARJETA|PAGO)/;
+
+  function parseMonto(text) {
+    const lines = (text || '').split(/\r?\n/);
+    const cands = [];
+    let carry = 0; // etiqueta heredada de la linea anterior ("Depositaste" \n "$9,000.00")
+
+    lines.forEach((line, idx) => {
+      const L = norm(line);
+      const tieneNumero = /\d/.test(line);
+
+      // La etiqueta viene sola en su linea: hereda el nivel a la siguiente
+      if (!tieneNumero) {
+        carry = T1.test(L) && !NEG.test(L) ? 1 : 0;
+        return;
+      }
+
+      if (IDLINE.test(L) && !/TOTAL|IMPORTE|DEPOSITASTE/.test(L)) { carry = 0; return; }
+
+      let tier = 0;
+      if (T1.test(L)) tier = 1;
+      else if (T2.test(L)) tier = 2;
+      if (carry === 1 && tier === 0 && !NEG.test(L)) tier = 1;
+      carry = 0;
+
+      if (NEG.test(L)) {
+        // "IMPORTE DEPOSITADO" gana sobre "RECIBIDO"; si conviven, degrada
+        if (/DEPOSITASTE|IMPORTE DEPOSITADO|EFEC\.? DEPOSITADO/.test(L) && !/RECIBIDO|INGRESAD/.test(L)) {
+          tier = 1;
+        } else {
+          return;
+        }
+      }
+
+      let m;
+      RE_MONEY.lastIndex = 0;
+      while ((m = RE_MONEY.exec(line))) {
+        const hasDollar = /\$/.test(m[0]);
+        const hasDec = /\.\d{1,2}$/.test(m[1]);
+        const val = toNumber(m[1]);
+        if (!isFinite(val) || val <= 0) continue;
+        // Numeros enormes sin $ suelen ser folios
+        if (val > 999999 && !hasDollar) continue;
+        if (val > 5000000) continue;
+        // Enteros pequenos sin $ ni etiqueta: probablemente cantidad de piezas
+        if (!hasDollar && !hasDec && tier === 0) continue;
+
+        let score = tier === 1 ? 100 : tier === 2 ? 60 : 20;
+        if (hasDollar) score += 12;
+        if (hasDec) score += 8;
+        if (/\bTOTAL\b/.test(L)) score += 15;
+        if (/\bM\.?N\.?\b|PESOS/.test(L)) score += 5;
+        // El total suele estar en la mitad inferior del ticket
+        score += idx / Math.max(1, lines.length) * 6;
+
+        cands.push({ value: val, raw: m[0].trim(), line: line.trim(), score, tier });
+      }
+    });
+
+    if (!cands.length) return null;
+    // Si hay candidatos de nivel 1, ignora los demas
+    const t1 = cands.filter(c => c.tier === 1);
+    const pool = t1.length ? t1 : cands;
+    pool.sort((a, b) => b.score - a.score || b.value - a.value);
+    return pool[0];
+  }
+
+  // ---------- RFC / FOLIO ----------
+  function parseRFC(text) {
+    const m = norm(text).match(/\b([A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3})\b/);
+    return m ? m[1] : null;
+  }
+
+  function parseFolio(text) {
+    const T = norm(text);
+    let m =
+      T.match(/FOLIO(?:\s*(?:DE\s*)?(?:OPERACION|FACTURA|NUMERO))?\s*:?\s*([A-Z0-9][A-Z0-9\-]{2,24})/) ||
+      T.match(/(?:NO\.?\s*)?TICKET\s*:?\s*([A-Z0-9\-]{3,20})/) ||
+      T.match(/(?:NOTA DE VENTA|RECIBO(?: NO\.?)?)\s*:?\s*([A-Z0-9\-]{3,20})/) ||
+      T.match(/AUTORIZ(?:ACION)?\s*:?\s*([A-Z0-9\-]{3,20})/);
+    return m ? m[1] : null;
+  }
+
+  // ---------- BANCOS / DEPOSITOS ----------
+  const BANCOS = [
+    ['SANTANDER', 'SANTANDER'],
+    ['BBVA', 'BBVA'],
+    ['BANCOMER', 'BBVA'],
+    ['BANORTE', 'BANORTE'],
+    ['BANCO AZTECA', 'BANCO AZTECA'],
+    ['AZTECA', 'BANCO AZTECA'],
+    ['BANAMEX', 'BANAMEX'],
+    ['CITIBANAMEX', 'BANAMEX'],
+    ['HSBC', 'HSBC'],
+    ['SCOTIABANK', 'SCOTIABANK'],
+    ['INBURSA', 'INBURSA'],
+    ['BAJIO', 'BANBAJIO'],
+    ['AFIRME', 'AFIRME']
+  ];
+
+  function detectBanco(text) {
+    const T = norm(text);
+    for (const [needle, nombre] of BANCOS) {
+      if (T.includes(needle)) return nombre;
+    }
+    return null;
+  }
+
+  function esDeposito(text) {
+    const T = norm(text);
+    return !!detectBanco(T) && /DEP[OÓ]SITO|DEPOSITO|DEPOSITASTE|ABONO|EFEC\. DEPOSITADO/.test(T);
+  }
+
+  // Nombre del beneficiario en un comprobante de deposito
+  function parseBeneficiario(text) {
+    const lines = (text || '').split(/\r?\n/);
+    const patts = [
+      /NOMBRE DEL TITULAR\s*:?\s*(.*)/i,
+      /CLIENTE\s*:?\s*(.*)/i,
+      /CUENTA DESTINO\s*:?\s*[*\d-]*\s*(.*)/i,
+      /BENEFICIARIO\s*:?\s*(.*)/i,
+      /A NOMBRE DE\s*:?\s*(.*)/i,
+      /A FAVOR DE\s*:?\s*(.*)/i
+    ];
+    for (let i = 0; i < lines.length; i++) {
+      for (const p of patts) {
+        const m = lines[i].match(p);
+        if (m) {
+          let v = (m[1] || '').trim();
+          // Si la etiqueta venia sola, el nombre esta en la linea siguiente
+          if (v.length < 3 && lines[i + 1]) v = lines[i + 1].trim();
+          v = v.replace(/[.:;]+$/, '').trim();
+          if (/^(VENTA PUBLICO|PUBLICO EN GENERAL|GENERAL)/i.test(norm(v))) continue;
+          if (v.length >= 4 && /[A-Za-zÁÉÍÓÚÑ]{3}/.test(v)) return v;
+        }
+      }
+    }
+    // Cuenta destino con nombre en la linea siguiente
+    for (let i = 0; i < lines.length; i++) {
+      if (/CUENTA DESTINO|CUENTA\/TARJETA DE ABONO|NUMERO DE CUENTA/i.test(lines[i])) {
+        for (let j = i + 1; j <= i + 2 && j < lines.length; j++) {
+          const v = lines[j].trim();
+          if (v.length >= 6 && /^[A-ZÁÉÍÓÚÑ .'-]+$/i.test(v) && !/^(NOMBRE|IMPORTE|DENOMIN)/i.test(norm(v))) return v;
+        }
+      }
+    }
+
+    // Ultimo recurso: linea suelta que parece nombre de persona
+    // (Santander imprime al titular sin etiqueta, debajo del numero de cuenta)
+    const KEY = /BANCO|SUCURSAL|SUC\b|PLAZA|DEPOSIT|DOCUMENTOS|EFECTIVO|TOTAL|IMPORTE|CARGO|FOLIO|CUENTA|CHEQUE|GRUPO|FINANCIERO|INSTITUCION|MULTIPLE|MEXICO|JALISCO|ZAPOPAN|GUADALAJARA|TLAJOMULCO|AVISO|PRIVACIDAD|COMPROBANTE|OPERACION|CLIENTE|NOMBRE|TITULAR|FECHA|HORA|CAJERO|UBICACION|CIUDAD|ESTADO|DENOMIN|COMISION|CAMBIO|TARJETA|\bATM\b|RECIBO|PESOS|CENTAVOS|SERVICIO|LINEA|CONSULTA|VERIFIQUE|APLICAD/;
+    for (const raw of lines) {
+      let v = raw.trim().replace(/[.,;:]+$/, '').trim();
+      if (v.length < 10 || v.length > 45) continue;
+      if (!/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ&.' -]+$/.test(v)) continue; // solo mayusculas y espacios
+      const words = v.split(/\s+/).filter(w => w.length > 1);
+      if (words.length < 3 || words.length > 6) continue;
+      if (KEY.test(norm(v))) continue;
+      return v;
+    }
+    return null;
+  }
+
+  // ---------- PROVEEDOR ----------
+  // Lineas que jamas son el nombre del comercio
+  const BASURA_LINEA = new RegExp(
+    '^(\\s*[-=*_.]+\\s*|\\s*)$' +
+    '|COPIA DEL CLIENTE|GRACIAS|BIENVENID|CAJA|CAJER|TICKET|FOLIO' +
+    // terminales y procesadores de pago (no son el proveedor)
+    '|^GETNET$|^CLIP$|^NETPAY$|^SR ?PAGO$|^MERCADO PAGO$|^IZETTLE$|^BILLPOCKET$|^PAYCLIP$' +
+    // etiquetas de formato vacias en recibos manuscritos
+    '|^(VENTA|APROBADA|DENEGADA|FECHA|HORA|NOMBRE|PAQUETE|PRECIO|MARCA|PLACAS|COLOR|CONCEPTO|EQUIPO|CANTIDAD|IMPORTE|TOTAL|CLIENTE|RECIBO|SUCURSAL|DIRECCION|TEL[EÉ]FONO|R\\.?F\\.?C\\.?)\\s*:?\\s*$' +
+    '|^\\W*$', 'i');
+
+  function parseProveedor(text, catalogo) {
+    const T = norm(text);
+
+    // 1) Coincidencia con el catalogo del usuario (lo mas confiable)
+    if (catalogo && catalogo.length) {
+      const hits = [];
+      for (const p of catalogo) {
+        const n = norm(p);
+        if (n.length < 4) continue;
+        if (T.includes(n)) hits.push({ nombre: p, len: n.length });
+      }
+      if (hits.length) {
+        hits.sort((a, b) => b.len - a.len);
+        return { value: hits[0].nombre, source: 'catalogo' };
+      }
+    }
+
+    // 2) Banco — solo si el documento ES un deposito bancario.
+    //    Si no, "BANCOMER" puede venir de la marca de la tarjeta en un ticket
+    //    de gasolina y no es el proveedor.
+    if (esDeposito(T)) {
+      const banco = detectBanco(T);
+      if (banco) return { value: banco, source: 'banco' };
+    }
+
+    // 3) Razon social (S.A. de C.V., S. de R.L., SAPI, SC)
+    const rs = (text || '').match(/^.*\b(S\.?\s?A\.?\s?(DE\s?C\.?V\.?)?|S\.?\s?DE\s?R\.?L\.?|SAPI|S\.?C\.?)\b.*$/im);
+    if (rs) {
+      const v = rs[0].replace(/\*+/g, '').trim();
+      if (v.length >= 5 && v.length <= 70) return { value: v, source: 'razon_social' };
+    }
+
+    // 4) Primeras lineas utiles del ticket
+    const lines = (text || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    for (const l of lines.slice(0, 8)) {
+      if (BASURA_LINEA.test(l)) continue;
+      if (/^\d/.test(l)) continue;
+      if (/:\s*$/.test(l)) continue;                 // "FECHA:" sin valor
+      const letters = (l.match(/[A-Za-zÁÉÍÓÚÑ]/g) || []).length;
+      if (letters < 4) continue;
+      if (l.length > 60) continue;
+      return { value: l.replace(/[*|]+/g, '').trim(), source: 'encabezado' };
+    }
+    // 5) Banco como ultimo recurso
+    const banco2 = detectBanco(T);
+    if (banco2) return { value: banco2, source: 'banco' };
+    return { value: '', source: 'ninguno' };
+  }
+
+  // ---------- CONCEPTO SUGERIDO ----------
+  function sugerirConcepto(text) {
+    const T = norm(text);
+    if (/PREMIUM|MAGNA|DIESEL|GASOLINA|LITROS|ESTACION SERV|SERVICIO RAYO|AKRON|PEMEX|LLANTA|PARCHE|MOTO|AUTOZONE|VERIFICENTRO|AUTOLAVADO|LAVADO|CASETA|PEAJE|UBER|DIDI/.test(T))
+      return 'Transporte';
+    if (/CAFE|MATCHA|CAPUCHINO|RESTAURANT|TAQUER|ABARROTES|COMEDOR|TORTILL|OXXO|SEVEN|POLLO|PECHUGON|LONCHER|BEBIDA|AGUA PURIF/.test(T))
+      return 'Alimentos';
+    if (/PAPELERIA|BLOCK|PLUMAS|SOBRES|CARPETAS|COPIAS|IMPRESION|TONER/.test(T))
+      return 'Papelería';
+    if (/HERRAMIENTA|TRUPER|TALADRO|DISCO CORTE|ANDAMIO|GPS/.test(T))
+      return 'Herramienta';
+    if (esDeposito(T) || /MANO DE OBRA|RAYA|SEMANA|DESTAJO|ALBANIL|MAESTRO|LIQUIDACION|ANTICIPO DE OBRA/.test(T))
+      return 'Mano de Obra';
+    return 'Materiales';
+  }
+
+  function sugerirFormaPago(text) {
+    const T = norm(text);
+    if (/TRANSFERENCIA|SPEI/.test(T)) return 'Transferencia';
+    if (/DEP[OÓ]SITO|DEPOSITASTE|EFEC\. DEPOSITADO/.test(T)) return 'Deposito';
+    if (/TARJETA (DE )?CREDITO|CREDITO\b/.test(T)) return 'Tarjeta Credito';
+    if (/TARJETA (DE )?DEBITO|DEBITO\b/.test(T)) return 'Tarjeta Debito';
+    if (/EFECTIVO|CAMBIO/.test(T)) return 'Efectivo';
+    return 'Efectivo';
+  }
+
+  // Conceptos de linea (para armar la descripcion detallada)
+  function parseConceptosLinea(text) {
+    const out = [];
+    const lines = (text || '').split(/\r?\n/);
+    for (const line of lines) {
+      const L = norm(line);
+      if (IDLINE.test(L) || NEG.test(L) || /TOTAL|SUBTOTAL/.test(L)) continue;
+      // "1 PZ SIES 200 MG 20 CAP    $445.40"  |  "1 CAPUCHINO GDE   90.00"
+      const m = line.match(/^\s*(\d{1,3})\s*(?:PZ|PIEZA|PZA|X)?\s+([A-Za-zÁÉÍÓÚÑ][^$]{2,45}?)\s+\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*$/);
+      if (m) {
+        const desc = m[2].trim().replace(/\s{2,}/g, ' ');
+        if (desc.length >= 3) out.push({ cant: +m[1], desc, importe: toNumber(m[3]) });
+      }
+    }
+    return out;
+  }
+
+  // ---------- API principal ----------
+  function parseRecibo(text, opts) {
+    opts = opts || {};
+    const catalogo = opts.proveedores || [];
+    const fecha = parseFecha(text);
+    const monto = parseMonto(text);
+    const prov = parseProveedor(text, catalogo);
+    const deposito = esDeposito(text);
+    const beneficiario = deposito ? parseBeneficiario(text) : null;
+    const lineas = parseConceptosLinea(text);
+
+    return {
+      fecha: fecha ? fecha.value : '',
+      fecha_raw: fecha ? fecha.raw : '',
+      monto: monto ? monto.value : '',
+      monto_raw: monto ? monto.raw : '',
+      monto_linea: monto ? monto.line : '',
+      monto_confianza: monto ? (monto.tier === 1 ? 'alta' : monto.tier === 2 ? 'media' : 'baja') : 'nula',
+      proveedor: deposito && beneficiario ? beneficiario : prov.value,
+      proveedor_source: deposito && beneficiario ? 'beneficiario' : prov.source,
+      banco: detectBanco(text) || '',
+      es_deposito: deposito,
+      beneficiario: beneficiario || '',
+      rfc: parseRFC(text) || '',
+      folio: parseFolio(text) || '',
+      concepto: sugerirConcepto(text),
+      forma_pago: sugerirFormaPago(text),
+      descripcion: lineas.length
+        ? lineas.map(l => l.desc).join(', ').slice(0, 120)
+        : '',
+      lineas
+    };
+  }
+
+  const API = {
+    norm, parseRecibo, parseFecha, parseMonto, parseProveedor,
+    parseRFC, parseFolio, parseBeneficiario, detectBanco, esDeposito,
+    sugerirConcepto, sugerirFormaPago, parseConceptosLinea
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  else root.ReciboParser = API;
+})(typeof self !== 'undefined' ? self : this);
+
+/* ---------------------------------------------------------------
+   5. IMAGEN: cola, canvas, rotacion, contraste, seleccion de zona
+   --------------------------------------------------------------- */
+let COLA = [];          // {key, name, dataUrl, done}
+let iSel = -1;          // indice en la cola
+let IMG = null;         // HTMLImageElement cargada
+let rot = 0, bw = false;
+let sel = null;         // {x,y,w,h} en pixeles del canvas
+const MAXW = 1500;
+
+const cv = $('#cv'), ctx = cv.getContext('2d', { willReadFrequently: true });
+
+function fileToDataUrl(f) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result);
+    fr.onerror = rej;
+    fr.readAsDataURL(f);
+  });
+}
+/* Reduce y comprime para que el respaldo no explote */
+function comprimir(dataUrl, maxW) {
+  return new Promise(res => {
+    const im = new Image();
+    im.onload = () => {
+      const sc = Math.min(1, maxW / im.naturalWidth);
+      const c = document.createElement('canvas');
+      c.width = Math.round(im.naturalWidth * sc);
+      c.height = Math.round(im.naturalHeight * sc);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      res(c.toDataURL('image/jpeg', 0.82));
+    };
+    im.onerror = () => res(dataUrl);
+    im.src = dataUrl;
+  });
+}
+
+async function agregarArchivos(files) {
+  const arr = Array.from(files).filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name));
+  if (!arr.length) { toast('No reconocí ninguna imagen en lo que subiste.', 'warn'); return; }
+  let n = 0;
+  for (const f of arr) {
+    try {
+      const raw = await fileToDataUrl(f);
+      const du = await comprimir(raw, 1800);
+      const key = 'img_' + uid();
+      await imgPut(key, du);
+      COLA.push({ key, name: f.name, dataUrl: du, done: false });
+      n++;
+    } catch (e) { console.warn(e); }
+  }
+  renderCola();
+  if (iSel < 0 && COLA.length) elegirImagen(0);
+  toast(n === 1 ? 'Recibo agregado.' : n + ' recibos agregados a la cola.');
+}
+
+function renderCola() {
+  const q = $('#queue');
+  q.innerHTML = COLA.map((c, i) =>
+    `<div class="qi ${i === iSel ? 'on' : ''} ${c.done ? 'done' : ''}" data-i="${i}">
+       <img src="${c.dataUrl}" alt="">
+       <div class="x" data-del="${i}">✕</div>
+     </div>`).join('');
+  const pend = COLA.filter(c => !c.done).length;
+  $('#qInfo').textContent = COLA.length ? `${COLA.length} en cola · ${pend} sin registrar` : '';
+  $$('#queue .qi').forEach(el => {
+    el.onclick = ev => {
+      if (ev.target.dataset.del != null) {
+        const i = +ev.target.dataset.del;
+        imgDel(COLA[i].key); COLA.splice(i, 1);
+        if (iSel >= COLA.length) iSel = COLA.length - 1;
+        renderCola();
+        if (iSel >= 0) elegirImagen(iSel); else limpiarVisor();
+        return;
+      }
+      elegirImagen(+el.dataset.i);
+    };
+  });
+}
+
+function limpiarVisor() {
+  IMG = null; sel = null; rot = 0; bw = false;
+  cv.hidden = true; $('#vEmpty').style.display = '';
+  $('#selbox').style.display = 'none';
+  ['#btnOcrAll', '#btnOcrZone', '#btnVision', '#btnRot', '#btnBw', '#btnClear'].forEach(s => $(s).disabled = true);
+}
+
+function elegirImagen(i) {
+  iSel = i; sel = null; rot = 0; bw = false;
+  const c = COLA[i]; if (!c) return limpiarVisor();
+  const im = new Image();
+  im.onload = () => {
+    IMG = im;
+    dibujar();
+    cv.hidden = false; $('#vEmpty').style.display = 'none';
+    ['#btnOcrAll', '#btnOcrZone', '#btnVision', '#btnRot', '#btnBw', '#btnClear'].forEach(s => $(s).disabled = false);
+    $('#btnOcrZone').disabled = true;
+  };
+  im.src = c.dataUrl;
+  renderCola();
+}
+
+function dibujar() {
+  if (!IMG) return;
+  const vert = rot % 180 !== 0;
+  let w = vert ? IMG.naturalHeight : IMG.naturalWidth;
+  let h = vert ? IMG.naturalWidth : IMG.naturalHeight;
+  const sc = Math.min(1, MAXW / w);
+  cv.width = Math.round(w * sc); cv.height = Math.round(h * sc);
+  ctx.save();
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.translate(cv.width / 2, cv.height / 2);
+  ctx.rotate(rot * Math.PI / 180);
+  const dw = (vert ? cv.height : cv.width), dh = (vert ? cv.width : cv.height);
+  ctx.drawImage(IMG, -dw / 2, -dh / 2, dw, dh);
+  ctx.restore();
+  if (bw) aplicarContraste(ctx, cv.width, cv.height);
+  $('#selbox').style.display = 'none';
+}
+
+/* Escala de grises + estiramiento de contraste: sube mucho la lectura
+   en tickets térmicos descoloridos */
+function aplicarContraste(c, w, h) {
+  const d = c.getImageData(0, 0, w, h), p = d.data;
+  let mn = 255, mx = 0;
+  for (let i = 0; i < p.length; i += 4) {
+    const g = (p[i] * 0.299 + p[i + 1] * 0.587 + p[i + 2] * 0.114) | 0;
+    p[i] = p[i + 1] = p[i + 2] = g;
+    if (g < mn) mn = g; if (g > mx) mx = g;
+  }
+  const rg = Math.max(1, mx - mn);
+  for (let i = 0; i < p.length; i += 4) {
+    let v = ((p[i] - mn) * 255 / rg);
+    v = v < 0 ? 0 : v > 255 ? 255 : v;
+    v = v < 118 ? v * 0.55 : 255 - (255 - v) * 0.55;   // acentúa medios tonos
+    p[i] = p[i + 1] = p[i + 2] = v;
+  }
+  c.putImageData(d, 0, 0);
+}
+
+/* --- seleccion de zona con mouse y con el dedo --- */
+(function () {
+  let drag = false, x0 = 0, y0 = 0;
+  const box = $('#selbox'), vw = $('#viewer');
+  const pt = ev => {
+    const t = ev.touches ? ev.touches[0] : ev;
+    const r = cv.getBoundingClientRect();
+    return { x: t.clientX - r.left, y: t.clientY - r.top, r };
+  };
+  function start(ev) {
+    if (!IMG) return;
+    const p = pt(ev); drag = true; x0 = p.x; y0 = p.y;
+    const vr = vw.getBoundingClientRect(), cr = p.r;
+    box.dataset.ox = cr.left - vr.left; box.dataset.oy = cr.top - vr.top;
+    box.style.display = 'block';
+    box.style.left = (x0 + +box.dataset.ox) + 'px';
+    box.style.top = (y0 + +box.dataset.oy) + 'px';
+    box.style.width = box.style.height = '0px';
+    ev.preventDefault();
+  }
+  function move(ev) {
+    if (!drag) return;
+    const p = pt(ev);
+    const l = Math.min(x0, p.x), t = Math.min(y0, p.y);
+    box.style.left = (l + +box.dataset.ox) + 'px';
+    box.style.top = (t + +box.dataset.oy) + 'px';
+    box.style.width = Math.abs(p.x - x0) + 'px';
+    box.style.height = Math.abs(p.y - y0) + 'px';
+    ev.preventDefault();
+  }
+  function end(ev) {
+    if (!drag) return; drag = false;
+    const p = pt(ev.changedTouches ? { touches: ev.changedTouches } : ev);
+    const k = cv.width / p.r.width;    // pantalla -> pixeles del canvas
+    const x = Math.min(x0, p.x) * k, y = Math.min(y0, p.y) * k;
+    const w = Math.abs(p.x - x0) * k, h = Math.abs(p.y - y0) * k;
+    if (w < 14 || h < 8) { sel = null; box.style.display = 'none'; $('#btnOcrZone').disabled = true; return; }
+    sel = { x: Math.max(0, x), y: Math.max(0, y), w, h };
+    $('#btnOcrZone').disabled = false;
+    setStatus('Zona marcada. Pica “Leer zona marcada”.');
+  }
+  cv.addEventListener('mousedown', start); cv.addEventListener('touchstart', start, { passive: false });
+  window.addEventListener('mousemove', move); cv.addEventListener('touchmove', move, { passive: false });
+  window.addEventListener('mouseup', end); cv.addEventListener('touchend', end);
+})();
+
+/* ---------------------------------------------------------------
+   6. OCR
+   --------------------------------------------------------------- */
+function setProg(p) { const b = $('#prog'); b.classList.add('on'); $('#progBar').style.width = Math.round(p * 100) + '%'; }
+function endProg() { const b = $('#prog'); $('#progBar').style.width = '100%'; setTimeout(() => { b.classList.remove('on'); $('#progBar').style.width = '0'; }, 400); }
+function setStatus(t) { $('#ocrStatus').textContent = t || ''; }
+
+const TRAD = { 'loading tesseract core': 'cargando motor', 'initializing tesseract': 'iniciando', 'loading language traineddata': 'descargando idioma', 'initializing api': 'preparando', 'recognizing text': 'leyendo el ticket' };
+let _w = null, _wl = null;
+async function worker() {
+  setStatus('Preparando el motor de OCR…');
+  await necesito('tesseract');
+  const lang = S.cfg.lang || 'spa';
+  if (_w && _wl === lang) return _w;
+  if (_w) { try { await _w.terminate(); } catch (e) {} _w = null; }
+  setStatus('Cargando motor de OCR (solo la primera vez)…');
+  _w = await Tesseract.createWorker(lang, 1, {
+    logger: m => {
+      if (m.status === 'recognizing text') setProg(m.progress);
+      else { setStatus((TRAD[m.status] || m.status) + '…'); if (m.progress) setProg(m.progress); }
+    }
+  });
+  _wl = lang;
+  return _w;
+}
+
+/* Prepara un canvas listo para OCR: recorta, agranda y limpia */
+function canvasParaOcr(region, escala) {
+  const r = region || { x: 0, y: 0, w: cv.width, h: cv.height };
+  const k = escala || (region ? 3 : 1.6);
+  const c = document.createElement('canvas');
+  c.width = Math.max(24, Math.round(r.w * k));
+  c.height = Math.max(16, Math.round(r.h * k));
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+  x.drawImage(cv, r.x, r.y, r.w, r.h, 0, 0, c.width, c.height);
+  aplicarContraste(x, c.width, c.height);
+  return c;
+}
+
+async function ocrTodo() {
+  if (!IMG) return;
+  const b = $('#btnOcrAll'); b.disabled = true;
+  try {
+    const w = await worker();
+    await w.setParameters({ tessedit_char_whitelist: '', tessedit_pageseg_mode: '3' });
+    setStatus('Leyendo el ticket completo…');
+    const { data } = await w.recognize(canvasParaOcr(null));
+    $('#ocrText').value = (data.text || '').trim();
+    interpretar(true);
+    setStatus('Listo. Revisa los campos marcados en amarillo o rojo.');
+  } catch (e) {
+    setStatus('');
+    toast('No se pudo leer: ' + e.message + '. Revisa tu internet la primera vez.', 'bad');
+  } finally { b.disabled = false; endProg(); }
+}
+
+let zonaTexto = '';
+async function ocrZona() {
+  if (!IMG || !sel) return;
+  const b = $('#btnOcrZone'); b.disabled = true;
+  try {
+    const w = await worker();
+    await w.setParameters({ tessedit_char_whitelist: '', tessedit_pageseg_mode: sel.h < cv.height * 0.06 ? '7' : '6' });
+    setStatus('Leyendo la zona marcada…');
+    const { data } = await w.recognize(canvasParaOcr(sel));
+    zonaTexto = (data.text || '').trim();
+    mostrarZona(zonaTexto);
+    setStatus('Zona leída. Elige a qué campo va.');
+  } catch (e) {
+    toast('No se pudo leer la zona: ' + e.message, 'bad');
+  } finally { b.disabled = false; endProg(); }
+}
+
+function mostrarZona(txt) {
+  const num = (txt.match(/\d[\d.,]*/g) || []).map(s => parseFloat(s.replace(/,/g, ''))).filter(n => isFinite(n) && n > 0);
+  const mejor = num.length ? num.reduce((a, b) => b > a ? b : a) : '';
+  const f = ReciboParser.parseFecha(txt);
+  $('#mZona .zt').textContent = txt || '(no se leyó nada)';
+  const bx = $('#mZona .zb');
+  bx.innerHTML = '';
+  const add = (lbl, fn, on) => {
+    const b = document.createElement('button');
+    b.className = 'btn sm' + (on ? ' pri' : ''); b.textContent = lbl;
+    b.onclick = () => { fn(); $('#mZona').classList.remove('on'); actualizarNombre(); };
+    bx.appendChild(b);
+  };
+  if (mejor) add('Monto: ' + money(mejor), () => { $('#f_monto').value = mejor.toFixed(2); marcarConf('Monto', 'alta'); }, true);
+  if (f) add('Fecha: ' + fechaMX(f.value), () => { $('#f_fecha').value = f.value; marcarConf('Fecha', 'alta'); }, !mejor);
+  const limpio = txt.replace(/\s+/g, ' ').trim().slice(0, 70);
+  if (limpio) {
+    add('Proveedor', () => { $('#f_a').value = limpio; });
+    add('Descripción', () => { $('#f_desc').value = limpio; });
+    add('Agregar al texto', () => { $('#ocrText').value = ($('#ocrText').value + '\n' + txt).trim(); interpretar(false); });
+  }
+  $('#mZona').classList.add('on');
+}
+
+/* --- Claude Vision --- */
+const PROMPT_VISION = `Eres un asistente de contabilidad de obra en México. Analiza la foto del comprobante y responde SOLO con un objeto JSON válido, sin texto adicional y sin bloques de código.
+
+Campos:
+{
+ "fecha": "YYYY-MM-DD",            // fecha del gasto u operación
+ "monto": 0.00,                     // TOTAL real pagado. Nunca el efectivo entregado ni el cambio ni el subtotal
+ "proveedor": "",                   // nombre del negocio. Si es un depósito bancario, el nombre del BENEFICIARIO de la cuenta
+ "descripcion": "",                 // qué se compró, breve, máximo 70 caracteres, en Title Case
+ "concepto": "",                    // uno de: CONCEPTOS
+ "forma_pago": "",                  // uno de: FORMAS
+ "rfc": "",
+ "folio": "",
+ "es_deposito": false,
+ "banco": "",
+ "confianza_monto": "alta|media|baja",
+ "notas": ""                        // si algo quedó ilegible, dilo aquí en una frase
+}
+
+Reglas duras:
+- Si el ticket dice TOTAL, ese es el monto. En un depósito bancario usa IMPORTE DEPOSITADO o "Depositaste", nunca "importe ingresado" ni "cambio".
+- Las fechas mexicanas van día/mes/año.
+- Si algo no aparece, deja el campo como cadena vacía. No inventes.`;
+
+async function vision() {
+  const key = (S.cfg.key || '').trim();
+  if (!key) { toast('Primero pon tu API key en la pestaña Exportar.', 'warn'); irA('dat'); return; }
+  if (!IMG) return;
+  const b = $('#btnVision'); b.disabled = true;
+  setStatus('Enviando la foto a Claude…'); setProg(0.35);
+  try {
+    const c = canvasParaOcr(sel, sel ? 2 : 1.4);
+    const b64 = c.toDataURL('image/jpeg', 0.9).split(',')[1];
+    const prompt = PROMPT_VISION
+      .replace('CONCEPTOS', S.conceptos.join(', '))
+      .replace('FORMAS', S.formas.join(', '));
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: S.cfg.model || 'claude-sonnet-5',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+    setProg(0.8);
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(res.status + ' ' + t.slice(0, 220));
+    }
+    const j = await res.json();
+    const txt = (j.content || []).map(c => c.text || '').join('');
+    const m = txt.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('Claude no devolvió JSON');
+    const d = JSON.parse(m[0]);
+    aplicarDatos({
+      fecha: d.fecha || '', monto: d.monto || '', proveedor: d.proveedor || '',
+      descripcion: d.descripcion || '', concepto: d.concepto || '', forma_pago: d.forma_pago || '',
+      rfc: d.rfc || '', folio: d.folio || '', es_deposito: !!d.es_deposito,
+      monto_confianza: d.confianza_monto || 'alta'
+    }, true);
+    $('#ocrFlag').innerHTML = '<span class="tag t-info">✨ Claude Vision</span>';
+    if (d.notas) setStatus('Nota de Claude: ' + d.notas); else setStatus('Listo, leído con Claude Vision.');
+  } catch (e) {
+    toast('Claude Vision falló: ' + e.message, 'bad');
+    setStatus('');
+  } finally { b.disabled = false; endProg(); }
+}
+
+/* ---------------------------------------------------------------
+   7. FORMULARIO
+   --------------------------------------------------------------- */
+let editandoId = null;
+
+function marcarConf(campo, nivel) {
+  const el = campo === 'Monto' ? $('#cMonto') : $('#cFecha');
+  const txt = { alta: 'alta', media: 'revisar', baja: 'revisar', nula: 'falta' }[nivel] || nivel;
+  el.innerHTML = nivel ? `<span class="tag t-${nivel}">${txt}</span>` : '';
+}
+
+function interpretar(desdeOcr) {
+  const txt = $('#ocrText').value;
+  if (!txt.trim()) { $('#parseInfo').textContent = 'No hay texto que interpretar.'; return; }
+  const d = ReciboParser.parseRecibo(txt, { proveedores: S.proveedores });
+  aplicarDatos(d, desdeOcr);
+  $('#parseInfo').textContent = d.monto
+    ? `Encontré el monto en: "${(d.monto_linea || '').slice(0, 48)}"`
+    : 'No encontré ningún monto. Marca la zona en la foto o escríbelo a mano.';
+  $('#ocrFlag').innerHTML = '<span class="tag t-ac">OCR del navegador</span>';
+}
+
+function aplicarDatos(d, sobrescribir) {
+  const set = (sel, v) => { if (v !== '' && v != null && (sobrescribir || !$(sel).value)) $(sel).value = v; };
+  set('#f_fecha', d.fecha);
+  if (d.monto !== '' && d.monto != null) set('#f_monto', Number(d.monto).toFixed(2));
+  set('#f_a', d.proveedor);
+  set('#f_desc', d.descripcion);
+  if (d.concepto && S.conceptos.some(c => c.toLowerCase() === String(d.concepto).toLowerCase())) set('#f_concepto', d.concepto);
+  if (d.forma_pago && S.formas.some(c => c.toLowerCase() === String(d.forma_pago).toLowerCase())) set('#f_forma', d.forma_pago);
+
+  marcarConf('Monto', d.monto ? (d.monto_confianza || 'alta') : 'nula');
+  marcarConf('Fecha', d.fecha ? 'alta' : 'nula');
+  $('#hMonto').textContent = d.monto_confianza === 'baja'
+    ? 'Confianza baja: verifica este monto contra el ticket.'
+    : (d.rfc || d.folio ? [d.rfc && 'RFC ' + d.rfc, d.folio && 'Folio ' + d.folio].filter(Boolean).join(' · ') : '');
+
+  // sugerencias de descripcion por partidas del ticket
+  const ch = $('#chipsDesc'); ch.innerHTML = '';
+  (d.lineas || []).slice(0, 6).forEach(l => {
+    const b = document.createElement('span');
+    b.className = 'chip'; b.textContent = l.desc + ' · ' + money(l.importe);
+    b.onclick = () => {
+      const cur = $('#f_desc').value.trim();
+      $('#f_desc').value = cur ? cur + ', ' + l.desc : l.desc;
+      actualizarNombre();
+    };
+    ch.appendChild(b);
+  });
+  if (d.es_deposito) {
+    const b = document.createElement('span');
+    b.className = 'chip'; b.textContent = '💰 Depósito bancario' + (d.banco ? ' · ' + d.banco : '');
+    ch.appendChild(b);
+  }
+  actualizarNombre();
+}
+
+function actualizarNombre() {
+  const r = leerForm();
+  $('#fnamePrev').textContent = (r.pagado_a || r.descripcion) ? nombreComprobante(r) + '.jpg' : '—';
+}
+
+function leerForm() {
+  return {
+    obra: $('#f_obra').value,
+    id_operacion: $('#f_id').value.trim(),
+    concepto: $('#f_concepto').value,
+    descripcion: $('#f_desc').value.trim(),
+    fecha: $('#f_fecha').value,
+    monto: parseFloat(String($('#f_monto').value).replace(/[$,\s]/g, '')) || 0,
+    pagado_por: $('#f_por').value,
+    pagado_a: $('#f_a').value.trim(),
+    forma_pago: $('#f_forma').value,
+    linea_pago: $('#f_linea').value.trim() || '-',
+    autorizado_por: $('#f_aut').value,
+    estatus: $('#f_estatus').value,
+    comentario: $('#f_com').value.trim()
+  };
+}
+
+function limpiarForm(todo) {
+  $('#f_fecha').value = ''; $('#f_monto').value = ''; $('#f_desc').value = '';
+  $('#f_a').value = ''; $('#f_com').value = ''; $('#ocrText').value = '';
+  $('#chipsDesc').innerHTML = ''; $('#parseInfo').textContent = ''; $('#hMonto').textContent = '';
+  $('#ocrFlag').innerHTML = ''; marcarConf('Monto', ''); marcarConf('Fecha', '');
+  $('#f_estatus').value = 'Pagado'; $('#f_linea').value = '-';
+  editandoId = null; $('#editInfo').textContent = '';
+  if (todo) { $('#f_obra').selectedIndex = 0; sincObra(); }
+  actualizarNombre();
+}
+
+function sincObra() {
+  const o = S.obras.find(x => x.nombre === $('#f_obra').value);
+  $('#f_id').value = o ? o.id : '';
+  $('#hObra').textContent = o ? 'Hoja "' + o.nombre + '" del Excel' : '';
+  S.cfg.obraUlt = $('#f_obra').value;
+  actualizarNombre();
+}
+
+function guardar(siguiente) {
+  const r = leerForm();
+  const falta = [];
+  if (!r.obra) falta.push('obra');
+  if (!r.fecha) falta.push('fecha');
+  if (!(r.monto > 0)) falta.push('monto');
+  if (!r.descripcion) falta.push('descripción');
+  if (!r.pagado_a) falta.push('pagado a');
+  if (falta.length) { toast('Falta: ' + falta.join(', '), 'warn'); return; }
+
+  r.comprobante = nombreComprobante(r);
+  r.ocr_text = $('#ocrText').value.trim();
+  r.img_key = (iSel >= 0 && COLA[iSel]) ? COLA[iSel].key : '';
+  r.img_ext = 'jpg';
+
+  if (editandoId) {
+    const i = S.registros.findIndex(x => x.rid === editandoId);
+    if (i >= 0) { r.rid = editandoId; r.creado = S.registros[i].creado; r.img_key = r.img_key || S.registros[i].img_key; S.registros[i] = r; }
+    toast('Gasto actualizado.');
+  } else {
+    r.rid = uid(); r.creado = new Date().toISOString();
+    S.registros.push(r);
+    if (!S.proveedores.some(p => p.toLowerCase() === r.pagado_a.toLowerCase())) S.proveedores.push(r.pagado_a);
+    if (iSel >= 0 && COLA[iSel]) COLA[iSel].done = true;
+    toast('Guardado: ' + money(r.monto) + ' · ' + r.obra);
+  }
+  S.cfg.porUlt = r.pagado_por;
+  save(); renderTodo();
+
+  const obra = r.obra, por = r.pagado_por, forma = r.forma_pago, con = r.concepto;
+  limpiarForm(false);
+  $('#f_obra').value = obra; sincObra();
+  $('#f_por').value = por; $('#f_forma').value = forma; $('#f_concepto').value = con;
+
+  if (siguiente) {
+    const n = COLA.findIndex(c => !c.done);
+    if (n >= 0) { elegirImagen(n); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    else { limpiarVisor(); renderCola(); toast('Ya registraste todos los recibos de la cola. 🎉'); }
+  }
+}
+
+async function editar(rid) {
+  const r = S.registros.find(x => x.rid === rid); if (!r) return;
+  irA('cap');
+  $('#f_obra').value = r.obra; sincObra();
+  $('#f_id').value = r.id_operacion; $('#f_concepto').value = r.concepto;
+  $('#f_desc').value = r.descripcion; $('#f_fecha').value = r.fecha;
+  $('#f_monto').value = Number(r.monto).toFixed(2); $('#f_por').value = r.pagado_por;
+  $('#f_a').value = r.pagado_a; $('#f_forma').value = r.forma_pago;
+  $('#f_linea').value = r.linea_pago; $('#f_aut').value = r.autorizado_por;
+  $('#f_estatus').value = r.estatus; $('#f_com').value = r.comentario || '';
+  $('#ocrText').value = r.ocr_text || '';
+  editandoId = rid;
+  $('#editInfo').innerHTML = '<span class="tag t-info">Editando un gasto ya guardado</span>';
+  actualizarNombre();
+  if (r.img_key) {
+    const du = await imgGet(r.img_key);
+    if (du) {
+      let i = COLA.findIndex(c => c.key === r.img_key);
+      if (i < 0) { COLA.push({ key: r.img_key, name: r.comprobante, dataUrl: du, done: true }); i = COLA.length - 1; }
+      elegirImagen(i);
+    }
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function borrar(rid) {
+  const r = S.registros.find(x => x.rid === rid); if (!r) return;
+  if (!confirm(`¿Borrar el gasto de ${money(r.monto)} — ${r.descripcion}?`)) return;
+  S.registros = S.registros.filter(x => x.rid !== rid);
+  save(); renderTodo(); toast('Gasto borrado.');
+}
+
+/* ---------------------------------------------------------------
+   8. LISTAS Y RESUMEN
+   --------------------------------------------------------------- */
+function filtrados() {
+  const o = $('#fl_obra').value, c = $('#fl_con').value, e = $('#fl_est').value;
+  const q = $('#fl_q').value.trim().toLowerCase();
+  const d1 = $('#fl_d1').value, d2 = $('#fl_d2').value;
+  return S.registros.filter(r => {
+    if (o && r.obra !== o) return false;
+    if (c && r.concepto !== c) return false;
+    if (e && r.estatus !== e) return false;
+    if (d1 && (r.fecha || '') < d1) return false;
+    if (d2 && (r.fecha || '') > d2) return false;
+    if (q && !(`${r.pagado_a} ${r.descripcion} ${r.obra} ${r.comentario || ''} ${r.id_operacion}`.toLowerCase().includes(q))) return false;
+    return true;
+  }).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.creado || '').localeCompare(a.creado || ''));
+}
+
+function kpi(k, v, d, cls) {
+  return `<div class="kpi ${cls || ''}"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d || ''}</div></div>`;
+}
+
+function renderRegistros() {
+  const rs = filtrados();
+  const tot = rs.reduce((s, r) => s + (+r.monto || 0), 0);
+  const pend = rs.filter(r => r.estatus === 'Pendiente');
+  const sinImg = rs.filter(r => !r.img_key).length;
+  $('#regKpis').innerHTML =
+    kpi('Gastos mostrados', rs.length, S.registros.length + ' en total') +
+    kpi('Suma', money(tot), rs.length ? 'promedio ' + money(tot / rs.length) : '') +
+    kpi('Pendientes', pend.length, pend.length ? money(pend.reduce((s, r) => s + (+r.monto || 0), 0)) : 'todo pagado', pend.length ? 'alerta' : 'mudo') +
+    kpi('Sin foto', sinImg, sinImg ? 'no saldrán en el ZIP' : 'todos con comprobante', sinImg ? 'alerta' : 'mudo');
+
+  const t = $('#tReg');
+  if (!rs.length) {
+    const hay = S.registros.length > 0;
+    t.innerHTML = `<tbody><tr><td data-l="" colspan="12"><div class="vacio">
+        <div class="ic">&#9650;</div>
+        <h4>${hay ? 'Ningún gasto coincide con los filtros' : 'Todavía no hay gastos'}</h4>
+        <p>${hay ? 'Prueba quitando algún filtro o amplía el rango de fechas.' : 'Captura el primer recibo y aquí verás el historial completo.'}</p>
+        ${hay ? '<button class="btn sec" data-lim="1">Quitar filtros</button>' : '<button class="btn pri" data-ira="cap">Capturar recibo</button>'}
+      </div></td></tr></tbody>`;
+    const b1 = t.querySelector('[data-lim]'); if (b1) b1.onclick = () => $('#btnFlClear').click();
+    const b2 = t.querySelector('[data-ira]'); if (b2) b2.onclick = () => irA('cap');
+    return;
+  }
+  t.innerHTML = `<thead><tr>
+      <th>Fecha</th><th>Obra</th><th>ID</th><th>Concepto</th><th>Descripción</th>
+      <th class="num">Monto</th><th>Pagó</th><th>Pagado a</th><th>Forma</th><th>Estatus</th><th>Comprobante</th><th></th>
+    </tr></thead><tbody>` +
+    rs.map(r => `<tr>
+      <td data-l="Fecha">${fechaMX(r.fecha)}</td>
+      <td data-l="Obra" class="clave">${esc(r.obra)}</td>
+      <td data-l="ID" class="mini">${esc(r.id_operacion)}</td>
+      <td data-l="Concepto">${esc(r.concepto)}</td>
+      <td data-l="Descripción" class="wrap">${esc(r.descripcion)}</td>
+      <td data-l="Monto" class="num">${money(r.monto)}</td>
+      <td data-l="Pagó">${esc(r.pagado_por)}</td>
+      <td data-l="Pagado a">${esc(r.pagado_a)}</td>
+      <td data-l="Forma" class="mini">${esc(r.forma_pago)}</td>
+      <td data-l="Estatus"><span class="tag t-${(r.estatus || '').toLowerCase()}">${esc(r.estatus)}</span></td>
+      <td data-l="Foto">${r.img_key ? 'Sí' : '<span class="mini">—</span>'}</td>
+      <td data-l=""><button class="btn sm sec" data-ed="${r.rid}">Editar</button> <button class="btn sm gh" data-bo="${r.rid}">Borrar</button></td>
+    </tr>`).join('') +
+    `</tbody><tfoot><tr><td colspan="5" data-l="">TOTAL · ${rs.length} gastos</td><td class="num" data-l="Total">${money(tot)}</td><td colspan="6" data-l=""></td></tr></tfoot>`;
+  t.querySelectorAll('[data-ed]').forEach(b => b.onclick = () => editar(b.dataset.ed));
+  t.querySelectorAll('[data-bo]').forEach(b => b.onclick = () => borrar(b.dataset.bo));
+}
+
+function tablaAgrupada(el, titulo, mapa, total) {
+  const filas = Object.entries(mapa).sort((a, b) => b[1].m - a[1].m);
+  const max = filas.length ? filas[0][1].m : 1;
+  $(el).innerHTML = `<thead><tr><th>${titulo}</th><th class="num">Gastos</th><th class="num">Monto</th><th style="width:110px">%</th></tr></thead><tbody>` +
+    filas.map(([k, v]) => {
+      const pc = total ? v.m / total * 100 : 0;
+      return `<tr><td class="wrap clave">${esc(k)}</td><td class="num">${v.n}</td><td class="num">${money(v.m)}</td>
+        <td><div class="bar"><i style="width:${(v.m / max * 100).toFixed(1)}%"></i></div><span class="mini">${pc.toFixed(1)}%</span></td></tr>`;
+    }).join('') +
+    `</tbody><tfoot><tr><td>TOTAL</td><td class="num">${filas.reduce((s, f) => s + f[1].n, 0)}</td><td class="num">${money(total)}</td><td></td></tr></tfoot>`;
+}
+
+function renderResumen() {
+  const rs = S.registros;
+  const tot = rs.reduce((s, r) => s + (+r.monto || 0), 0);
+  const gr = (fn) => rs.reduce((a, r) => { const k = fn(r) || '(sin dato)'; (a[k] = a[k] || { n: 0, m: 0 }).n++; a[k].m += (+r.monto || 0); return a; }, {});
+  const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+  const obras = gr(r => r.obra);
+  const nObras = Object.keys(obras).length;
+  const pend = rs.filter(r => r.estatus === 'Pendiente').reduce((s, r) => s + (+r.monto || 0), 0);
+  $('#resKpis').innerHTML =
+    kpi('Total registrado', money(tot), rs.length + ' gastos') +
+    kpi('Obras activas', nObras, nObras ? 'promedio ' + money(tot / nObras) + ' por obra' : '') +
+    kpi('Por pagar', money(pend), pend ? 'exige acción hoy' : 'nada pendiente', pend ? 'alerta' : 'mudo') +
+    kpi('Gasto más alto', rs.length ? money(Math.max(...rs.map(r => +r.monto || 0))) : '$0.00',
+        rs.length ? esc((rs.reduce((a, b) => (+b.monto || 0) > (+a.monto || 0) ? b : a).descripcion || '').slice(0, 34)) : '');
+
+  tablaAgrupada('#tPorObra', 'Obra', obras, tot);
+  tablaAgrupada('#tPorConcepto', 'Concepto', gr(r => r.concepto), tot);
+  tablaAgrupada('#tPorProv', 'Pagado a', gr(r => r.pagado_a), tot);
+  const mes = gr(r => { const p = (r.fecha || '').split('-'); return p.length === 3 ? MES[+p[1] - 1] + ' ' + p[0] : '(sin fecha)'; });
+  tablaAgrupada('#tPorMes', 'Mes', mes, tot);
+
+  // avisos utiles antes de entregar a la direccion
+  const av = [];
+  const sinFecha = rs.filter(r => !r.fecha).length;
+  const sinImg = rs.filter(r => !r.img_key).length;
+  const raros = rs.filter(r => (+r.monto || 0) > 50000);
+  const dup = {};
+  rs.forEach(r => { const k = r.fecha + '|' + r.monto + '|' + (r.pagado_a || '').toLowerCase(); dup[k] = (dup[k] || 0) + 1; });
+  const nDup = Object.values(dup).filter(v => v > 1).length;
+  if (sinFecha) av.push(['warn', `${sinFecha} gasto(s) sin fecha. En el Excel saldrán como "NA".`]);
+  if (sinImg) av.push(['warn', `${sinImg} gasto(s) sin foto: no aparecerán en el ZIP de comprobantes.`]);
+  if (raros.length) av.push(['warn', `${raros.length} gasto(s) arriba de $50,000. Vale la pena verificar el monto contra el comprobante.`]);
+  if (nDup) av.push(['warn', `${nDup} posible(s) duplicado(s): misma fecha, mismo monto y mismo proveedor.`]);
+  $('#alertas').innerHTML = '<h3>Revisión antes de entregar</h3>' +
+    (av.length ? av.map(a => `<div class="aviso">${a[1]}</div>`).join('')
+               : '<div class="aviso ok">Todo cuadra: fechas completas, comprobantes adjuntos y sin duplicados aparentes.</div>');
+}
+
+/* ---------------------------------------------------------------
+   9. CATALOGOS
+   --------------------------------------------------------------- */
+function chips(el, arr, quitar) {
+  $(el).innerHTML = arr.map((v, i) =>
+    `<span class="chip">${esc(v)}<b data-q="${i}">✕</b></span>`).join('') ||
+    '<span class="mini">Sin elementos.</span>';
+  $(el).querySelectorAll('[data-q]').forEach(b => b.onclick = () => { quitar(+b.dataset.q); });
+}
+
+function renderCatalogos() {
+  $('#tObras').innerHTML = `<thead><tr><th>Obra (hoja)</th><th>ID Operación</th><th class="num">Gastos</th><th class="num">Monto</th><th></th></tr></thead><tbody>` +
+    S.obras.map((o, i) => {
+      const rs = S.registros.filter(r => r.obra === o.nombre);
+      const m = rs.reduce((s, r) => s + (+r.monto || 0), 0);
+      return `<tr><td class="clave">${esc(o.nombre)}</td>
+        <td><input type="text" value="${esc(o.id)}" data-oid="${i}" style="padding:5px 7px;font-size:12.5px"></td>
+        <td class="num">${rs.length}</td><td class="num">${m ? money(m) : '—'}</td>
+        <td><button class="btn sm gh" data-obo="${i}">Borrar</button></td></tr>`;
+    }).join('') + '</tbody>';
+  $('#tObras').querySelectorAll('[data-oid]').forEach(inp => inp.onchange = () => {
+    S.obras[+inp.dataset.oid].id = inp.value.trim(); save(); llenarSelects(); sincObra();
+  });
+  $('#tObras').querySelectorAll('[data-obo]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.obo;
+    if (S.registros.some(r => r.obra === S.obras[i].nombre)) { toast('Esa obra ya tiene gastos registrados; no se puede borrar.', 'warn'); return; }
+    S.obras.splice(i, 1); save(); renderTodo();
+  });
+
+  chips('#chConcepto', S.conceptos, i => { S.conceptos.splice(i, 1); save(); renderTodo(); });
+  chips('#chPor', S.pagadores, i => { S.pagadores.splice(i, 1); save(); renderTodo(); });
+  chips('#chForma', S.formas, i => { S.formas.splice(i, 1); save(); renderTodo(); });
+  chips('#chProv', S.proveedores, i => { S.proveedores.splice(i, 1); save(); renderTodo(); });
+  $('#nProv').textContent = S.proveedores.length;
+}
+
+function llenarSelects() {
+  const opt = (a, sel) => a.map(v => `<option${v === sel ? ' selected' : ''}>${esc(v)}</option>`).join('');
+  const ob = S.obras.map(o => o.nombre);
+  const cur = $('#f_obra').value || S.cfg.obraUlt || ob[0];
+  $('#f_obra').innerHTML = opt(ob, cur);
+  $('#f_concepto').innerHTML = opt(S.conceptos, $('#f_concepto').value || 'Materiales');
+  $('#f_por').innerHTML = opt(S.pagadores, $('#f_por').value || S.cfg.porUlt || S.pagadores[0]);
+  $('#f_forma').innerHTML = opt(S.formas, $('#f_forma').value || 'Efectivo');
+  $('#fl_obra').innerHTML = '<option value="">Todas</option>' + opt(ob, $('#fl_obra').value);
+  $('#fl_con').innerHTML = '<option value="">Todos</option>' + opt(S.conceptos, $('#fl_con').value);
+  $('#dlProv').innerHTML = S.proveedores.map(p => `<option value="${esc(p)}">`).join('');
+}
+
+/* ---------------------------------------------------------------
+   10. EXPORTAR
+   --------------------------------------------------------------- */
+function hoy() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+
+function filaExcel(r) {
+  return [
+    r.id_operacion || '',
+    r.concepto || '',
+    r.descripcion || '',
+    r.fecha ? new Date(r.fecha + 'T12:00:00') : 'NA',
+    +r.monto || 0,
+    r.pagado_por || '',
+    r.pagado_a || '',
+    r.forma_pago || '',
+    r.linea_pago || '-',
+    r.comprobante || '',
+    r.autorizado_por || '',
+    r.estatus || '',
+    r.comentario || ''
+  ];
+}
+
+async function exportarXlsx() {
+  if (!S.registros.length) { toast('No hay gastos que exportar.', 'warn'); return; }
+  try { await necesito('xlsx'); } catch (e) { toast(e.message, 'bad'); return; }
+  const wb = XLSX.utils.book_new();
+  const anchos = [{ wch: 13 }, { wch: 20 }, { wch: 40 }, { wch: 13 }, { wch: 12 }, { wch: 16 }, { wch: 26 }, { wch: 16 }, { wch: 11 }, { wch: 54 }, { wch: 14 }, { wch: 11 }, { wch: 20 }];
+
+  // una hoja por obra, en el orden del catalogo
+  const usadas = [];
+  S.obras.forEach(o => {
+    const rs = S.registros.filter(r => r.obra === o.nombre)
+      .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+    if (!rs.length) return;
+    const aoa = [COLS].concat(rs.map(filaExcel));
+    aoa.push([]);
+    aoa.push(['', '', 'TOTAL ' + o.nombre, '', rs.reduce((s, r) => s + (+r.monto || 0), 0)]);
+    const ws = XLSX.utils.aoa_to_sheet(aoa, { cellDates: true });
+    ws['!cols'] = anchos;
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+    let nm = o.nombre.replace(/[\\\/\?\*\[\]:]/g, ' ').slice(0, 31);
+    while (usadas.includes(nm)) nm = nm.slice(0, 28) + '_2';
+    usadas.push(nm);
+    XLSX.utils.book_append_sheet(wb, ws, nm);
+  });
+
+  // hoja concentrado con todo
+  const all = S.registros.slice().sort((a, b) => (a.obra || '').localeCompare(b.obra || '') || (a.fecha || '').localeCompare(b.fecha || ''));
+  const aoa = [['Obra'].concat(COLS)].concat(all.map(r => [r.obra].concat(filaExcel(r))));
+  aoa.push([]);
+  aoa.push(['', '', '', 'TOTAL GENERAL', '', all.reduce((s, r) => s + (+r.monto || 0), 0)]);
+  const wsA = XLSX.utils.aoa_to_sheet(aoa, { cellDates: true });
+  wsA['!cols'] = [{ wch: 22 }].concat(anchos);
+  XLSX.utils.book_append_sheet(wb, wsA, 'CONCENTRADO');
+
+  XLSX.writeFile(wb, `Control De Gastos De Obra_${hoy()}.xlsx`, { cellDates: true, compression: true });
+  toast('Excel descargado con ' + usadas.length + ' hoja(s) de obra.');
+}
+
+function exportarCsv() {
+  if (!S.registros.length) { toast('No hay gastos que exportar.', 'warn'); return; }
+  const q = v => {
+    const s = String(v == null ? '' : v);
+    return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const head = ['Obra'].concat(COLS);
+  const body = S.registros.map(r => [r.obra, r.id_operacion, r.concepto, r.descripcion,
+    r.fecha ? fechaMX(r.fecha) : 'NA', (+r.monto || 0).toFixed(2), r.pagado_por, r.pagado_a,
+    r.forma_pago, r.linea_pago, r.comprobante, r.autorizado_por, r.estatus, r.comentario]);
+  const csv = '﻿' + [head].concat(body).map(f => f.map(q).join(',')).join('\r\n');
+  bajar(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `Gastos de Obra_${hoy()}.csv`);
+  toast('CSV descargado.');
+}
+
+async function exportarZip() {
+  const conFoto = S.registros.filter(r => r.img_key);
+  if (!conFoto.length) { toast('Ningún gasto tiene foto guardada.', 'warn'); return; }
+  try { await necesito('jszip'); } catch (e) { toast(e.message, 'bad'); return; }
+  toast('Armando el ZIP…');
+  const zip = new JSZip();
+  const usados = {};
+  let n = 0;
+  for (const r of conFoto) {
+    const du = await imgGet(r.img_key);
+    if (!du) continue;
+    let base = limpiaNombre(r.comprobante) || 'COMPROBANTE';
+    if (usados[base]) { usados[base]++; base += ' (' + usados[base] + ')'; } else { usados[base] = 1; }
+    const carpeta = limpiaNombre(etiquetaObra(r.obra));
+    zip.file(`${carpeta}/${base}.jpg`, du.split(',')[1], { base64: true });
+    n++;
+  }
+  const csv = '﻿' + [['Obra'].concat(COLS).join(',')].concat(
+    conFoto.map(r => [r.obra, r.id_operacion, r.concepto, '"' + (r.descripcion || '').replace(/"/g, '""') + '"',
+      r.fecha ? fechaMX(r.fecha) : 'NA', (+r.monto || 0).toFixed(2), r.pagado_por,
+      '"' + (r.pagado_a || '').replace(/"/g, '""') + '"', r.forma_pago, r.linea_pago,
+      '"' + (r.comprobante || '').replace(/"/g, '""') + '"', r.autorizado_por, r.estatus,
+      '"' + (r.comentario || '').replace(/"/g, '""') + '"'].join(','))).join('\r\n');
+  zip.file('_Relación de comprobantes.csv', csv);
+  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+  bajar(blob, `Comprobantes de Obra_${hoy()}.zip`);
+  toast(n + ' comprobante(s) en el ZIP, ya con su nombre correcto.');
+}
+
+function bajar(blob, nombre) {
+  const u = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = u; a.download = nombre; a.click();
+  setTimeout(() => URL.revokeObjectURL(u), 4000);
+}
+
+async function respaldar() {
+  const imgs = {};
+  for (const r of S.registros) if (r.img_key) { const d = await imgGet(r.img_key); if (d) imgs[r.img_key] = d; }
+  const data = JSON.stringify({ v: 1, fecha: new Date().toISOString(), estado: S, imgs });
+  bajar(new Blob([data], { type: 'application/json' }), `Respaldo Gastos de Obra_${hoy()}.json`);
+  toast('Respaldo guardado. Incluye las fotos.');
+}
+
+async function restaurar(file) {
+  try {
+    const j = JSON.parse(await file.text());
+    if (!j.estado) throw new Error('El archivo no tiene el formato esperado.');
+    if (!confirm('Esto reemplaza todo lo que tienes capturado ahora. ¿Continuar?')) return;
+    S = j.estado;
+    for (const [k, v] of Object.entries(j.imgs || {})) await imgPut(k, v);
+    COLA = []; iSel = -1; limpiarVisor();
+    save(); llenarSelects(); renderTodo();
+    toast('Respaldo restaurado: ' + S.registros.length + ' gastos.');
+  } catch (e) { toast('No se pudo restaurar: ' + e.message, 'bad'); }
+}
+
+/* ---------------------------------------------------------------
+   11. NAVEGACION E INICIO
+   --------------------------------------------------------------- */
+const VISTAS = {
+  cap: ['Capturar recibo', 'Toma la foto y la app llena los datos', 'Guardar gasto', () => guardar(false)],
+  reg: ['Gastos registrados', 'Todo lo capturado, con filtros', 'Capturar otro', () => irA('cap')],
+  res: ['Reportes', 'Totales por obra, concepto, proveedor y mes', 'Descargar Excel', () => exportarXlsx()],
+  cat: ['Catálogos', 'Obras, conceptos, formas de pago y proveedores', '', null],
+  dat: ['Exportar', 'Excel, ZIP de comprobantes y respaldo', 'Descargar Excel', () => exportarXlsx()]
+};
+function irA(v) {
+  const d = VISTAS[v] ? v : 'cap';
+  $$('.view').forEach(s => s.classList.toggle('on', s.id === 'v-' + d));
+  $$('.navlink').forEach(b => b.classList.toggle('on', b.dataset.v === d));
+  const t = VISTAS[d];
+  $('#tbTitle').textContent = t[0];
+  $('#tbSub').textContent = t[1];
+  const a = $('#tbAccion');
+  if (t[2]) { a.textContent = t[2]; a.style.display = ''; a.onclick = t[3]; }
+  else { a.style.display = 'none'; a.onclick = null; }
+  $('#savebar').classList.toggle('on', d === 'cap');
+  $('#side').classList.remove('abierta');
+  window.scrollTo({ top: 0 });
+}
+
+function renderTodo() {
+  llenarSelects();
+  renderRegistros();
+  renderResumen();
+  renderCatalogos();
+  $('#bReg').textContent = S.registros.length;
+  const tot = S.registros.reduce((s, r) => s + (+r.monto || 0), 0);
+  $('#sbTotal').textContent = money(tot);
+  $('#savebar').classList.toggle('on', $('#v-cap').classList.contains('on'));
+  $('#quienSub').textContent = S.registros.length
+    ? `${S.registros.length} gastos · ${money(tot)}`
+    : 'Administración';
+  $('#estado').innerHTML = [
+    `Gastos capturados: <b>${S.registros.length}</b>`,
+    `Fotos guardadas: <b>${S.registros.filter(r => r.img_key).length}</b>`,
+    `Almacenamiento de fotos: <b>${dbOk ? 'permanente (IndexedDB)' : 'solo esta sesión'}</b>`,
+    `Proveedores en catálogo: <b>${S.proveedores.length}</b>`,
+    `API key de Claude: <b>${S.cfg.key ? 'configurada' : 'sin configurar'}</b>`
+  ].join('<br>');
+}
+
+function modalZona() {
+  const d = document.createElement('div');
+  d.className = 'modal'; d.id = 'mZona';
+  d.innerHTML = `<div class="box">
+    <h2 style="font-size:19px">Zona leída</h2>
+    <p class="hint" style="margin:2px 0 12px">Elige a qué campo va este dato.</p>
+    <div class="zt"></div>
+    <div class="row zb"></div>
+    <div class="sep"></div>
+    <button class="btn gh blk" id="zCancel">Cancelar</button>
+  </div>`;
+  document.body.appendChild(d);
+  d.onclick = e => { if (e.target === d) d.classList.remove('on'); };
+  $('#zCancel').onclick = () => d.classList.remove('on');
+}
+
+async function init() {
+  load();
+  await openDB();
+  modalZona();
+  llenarSelects();
+  sincObra();
+
+  if (!dbOk) {
+    $('#storeWarn').innerHTML = `<div class="aviso">Este navegador no guarda las fotos de forma permanente. Los datos del formulario sí quedan, pero <b>descarga el ZIP o el respaldo antes de cerrar</b> para no perder las imágenes. Se recomienda Chrome.</div>`;
+  }
+
+  // navegacion
+  $('#nav').onclick = e => { const b = e.target.closest('.navlink'); if (b) irA(b.dataset.v); };
+  $('#btnMenu').onclick = () => $('#side').classList.toggle('abierta');
+  $('#btnAyuda').onclick = () => $('#mAyuda').classList.add('on');
+  $('#btnCerrarAyuda').onclick = () => $('#mAyuda').classList.remove('on');
+  $('#mAyuda').onclick = e => { if (e.target.id === 'mAyuda') $('#mAyuda').classList.remove('on'); };
+
+  // pestañas de estatus
+  $('#fltabs').onclick = e => {
+    const b = e.target.closest('.ftab'); if (!b) return;
+    $$('#fltabs .ftab').forEach(x => x.classList.toggle('on', x === b));
+    $('#fl_est').value = b.dataset.est;
+    renderRegistros();
+  };
+
+  // carga de archivos
+  const dz = $('#dz');
+  dz.onclick = () => $('#fileIn').click();
+  $('#btnFile').onclick = () => $('#fileIn').click();
+  $('#btnCam').onclick = () => $('#fileCam').click();
+  $('#fileIn').onchange = e => { agregarArchivos(e.target.files); e.target.value = ''; };
+  $('#fileCam').onchange = e => { agregarArchivos(e.target.files); e.target.value = ''; };
+  ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('hot'); }));
+  ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('hot'); }));
+  dz.addEventListener('drop', e => agregarArchivos(e.dataTransfer.files));
+  window.addEventListener('paste', e => { if (e.clipboardData && e.clipboardData.files.length) agregarArchivos(e.clipboardData.files); });
+
+  // visor
+  $('#btnOcrAll').onclick = ocrTodo;
+  $('#btnOcrZone').onclick = ocrZona;
+  $('#btnVision').onclick = vision;
+  $('#btnRot').onclick = () => { rot = (rot + 90) % 360; sel = null; $('#btnOcrZone').disabled = true; dibujar(); };
+  $('#btnBw').onclick = () => { bw = !bw; dibujar(); setStatus(bw ? 'Contraste alto activado.' : 'Contraste normal.'); };
+  $('#btnClear').onclick = () => { sel = null; $('#selbox').style.display = 'none'; $('#btnOcrZone').disabled = true; setStatus(''); };
+  $('#btnReparse').onclick = () => interpretar(true);
+
+  // formulario
+  $('#f_obra').onchange = sincObra;
+  ['#f_a', '#f_desc'].forEach(s => $(s).addEventListener('input', actualizarNombre));
+  $('#btnSave').onclick = () => guardar(false);
+  $('#btnSaveNext').onclick = () => guardar(true);
+  $('#btnReset').onclick = () => limpiarForm(false);
+
+  // filtros
+  ['#fl_obra', '#fl_con', '#fl_est', '#fl_d1', '#fl_d2'].forEach(s => $(s).onchange = renderRegistros);
+  $('#fl_q').oninput = renderRegistros;
+  $('#btnFlClear').onclick = () => {
+    ['#fl_obra', '#fl_con', '#fl_est', '#fl_d1', '#fl_d2', '#fl_q'].forEach(s => $(s).value = '');
+    renderRegistros();
+  };
+
+  // catalogos
+  const addTo = (arr, inp) => {
+    const v = $(inp).value.trim(); if (!v) return;
+    if (arr.some(x => x.toLowerCase() === v.toLowerCase())) { toast('Ya está en la lista.', 'warn'); return; }
+    arr.push(v); $(inp).value = ''; save(); renderTodo(); toast('Agregado.');
+  };
+  $('#btnAddCon').onclick = () => addTo(S.conceptos, '#nb_con');
+  $('#btnAddPor').onclick = () => addTo(S.pagadores, '#nb_por');
+  $('#btnAddForma').onclick = () => addTo(S.formas, '#nb_forma');
+  $('#btnAddProv').onclick = () => addTo(S.proveedores, '#nb_prov');
+  $('#nb_prov').onkeydown = e => { if (e.key === 'Enter') $('#btnAddProv').click(); };
+  $('#btnAddObra').onclick = () => {
+    const n = $('#nb_obra').value.trim(), i = $('#nb_id').value.trim();
+    if (!n) { toast('Escribe el nombre de la obra.', 'warn'); return; }
+    if (S.obras.some(o => o.nombre.toLowerCase() === n.toLowerCase())) { toast('Esa obra ya existe.', 'warn'); return; }
+    S.obras.push({ nombre: n, id: i });
+    $('#nb_obra').value = ''; $('#nb_id').value = '';
+    save(); renderTodo(); toast('Obra agregada.');
+  };
+
+  // exportar
+  $('#btnXlsx').onclick = exportarXlsx;
+  $('#btnZip').onclick = exportarZip;
+  $('#sbSave').onclick = () => guardar(false);
+  $('#sbNext').onclick = () => guardar(true);
+  $('#btnCsv').onclick = exportarCsv;
+  $('#btnBackup').onclick = respaldar;
+  $('#btnRestore').onclick = () => $('#fileJson').click();
+  $('#fileJson').onchange = e => { if (e.target.files[0]) restaurar(e.target.files[0]); e.target.value = ''; };
+  $('#btnWipe').onclick = () => {
+    if (!confirm('Se borran TODOS los gastos y las fotos de este navegador. ¿Seguro?')) return;
+    if (!confirm('Última confirmación: esto no se puede deshacer. ¿Borrar todo?')) return;
+    S.registros.forEach(r => r.img_key && imgDel(r.img_key));
+    S.registros = []; COLA = []; iSel = -1;
+    limpiarVisor(); limpiarForm(true); save(); renderTodo(); renderCola();
+    toast('Todo borrado.');
+  };
+
+  // configuracion
+  $('#s_key').value = S.cfg.key || '';
+  $('#s_model').value = S.cfg.model || 'claude-sonnet-5';
+  $('#s_lang').value = S.cfg.lang || 'spa';
+  $('#btnSaveCfg').onclick = () => {
+    S.cfg.key = $('#s_key').value.trim();
+    S.cfg.model = $('#s_model').value;
+    const antes = S.cfg.lang; S.cfg.lang = $('#s_lang').value;
+    if (antes !== S.cfg.lang && _w) { _w.terminate().catch(() => {}); _w = null; }
+    save(); renderTodo(); toast('Configuración guardada.');
+  };
+
+  irA('cap');
+  renderTodo();
+  renderCola();
+  if (!S.registros.length) $('#mAyuda').classList.add('on');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
