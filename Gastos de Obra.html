@@ -651,10 +651,44 @@ label.f.err input,label.f.err select{border-color:var(--naranja);box-shadow:inse
 
 <!-- ================= EXPORTAR ================= -->
 <section class="view" id="v-dat">
+  <div class="card">
+    <h3>Maestro en Google Sheets <span id="syncTag"></span></h3>
+    <p class="hint" style="margin:-8px 0 16px">Cuando est&aacute; conectado, cada gasto que guardas se sube solo a la pesta&ntilde;a de su obra y la foto se guarda en su carpeta de Drive. Si no hay se&ntilde;al se queda pendiente y se manda despu&eacute;s.</p>
+    <div class="grid g2">
+      <label class="f"><span>URL de la aplicaci&oacute;n web</span>
+        <input type="text" id="s_url" placeholder="https://script.google.com/macros/s/&hellip;/exec">
+        <div class="hint">La que te da Apps Script al implementar.</div>
+      </label>
+      <label class="f"><span>Clave compartida</span>
+        <input type="password" id="s_clave" placeholder="La misma que pusiste en el script">
+        <div class="hint">Debe coincidir con la variable CLAVE del script.</div>
+      </label>
+    </div>
+    <div class="grid g2">
+      <label class="f"><span>&iquest;Qui&eacute;n captura en este equipo?</span>
+        <input type="text" id="s_quien" placeholder="Luis">
+        <div class="hint">Se escribe en la columna "Capturado por" de cada gasto.</div>
+      </label>
+      <label class="f"><span>Env&iacute;o autom&aacute;tico</span>
+        <select id="s_auto">
+          <option value="1">S&iacute;, subir en cuanto guardo</option>
+          <option value="0">No, subo yo cuando quiera</option>
+        </select>
+      </label>
+    </div>
+    <div class="row">
+      <button class="btn conf" id="btnProbar">Probar conexi&oacute;n</button>
+      <button class="btn sec" id="btnSync">Enviar pendientes</button>
+      <button class="btn" id="btnCatalogos">Traer cat&aacute;logos del maestro</button>
+      <button class="btn gh" id="btnGuardarHoja">Guardar</button>
+      <span class="mini" id="syncEstado"></span>
+    </div>
+  </div>
   <div class="mitad">
     <div class="card">
       <h3>Entregables</h3>
       <p class="hint" style="margin:-8px 0 16px">El Excel sale con una hoja por obra y las mismas 13 columnas que ya usan, para pegarlo directo en el archivo de la dirección.</p>
+      <p class="hint" style="margin:-8px 0 14px">Sirven igual con o sin maestro conectado: son tu respaldo y lo que entregas a la direcci&oacute;n.</p>
       <button class="btn pri blk" id="btnXlsx" style="margin-bottom:8px">Descargar Excel (.xlsx)</button>
       <button class="btn sec blk" id="btnZip" style="margin-bottom:8px">Descargar ZIP de comprobantes</button>
       <button class="btn blk" id="btnCsv">Descargar CSV plano</button>
@@ -822,7 +856,10 @@ let S = {
   pagadores: DEF.pagadores.slice(),
   formas: DEF.formas.slice(),
   proveedores: DEF.proveedores.slice(),
-  cfg: { key: '', model: 'claude-sonnet-5', lang: 'spa', obraUlt: '', porUlt: '' }
+  cfg: {
+    key: '', model: 'claude-sonnet-5', lang: 'spa', obraUlt: '', porUlt: '',
+    hojaUrl: '', hojaClave: '', quien: '', autoSync: true
+  }
 };
 
 function save() {
@@ -837,7 +874,10 @@ function load() {
     if (!raw) return;
     const o = JSON.parse(raw);
     S = Object.assign(S, o);
-    S.cfg = Object.assign({ key: '', model: 'claude-sonnet-5', lang: 'spa', obraUlt: '', porUlt: '' }, o.cfg || {});
+    S.cfg = Object.assign({
+      key: '', model: 'claude-sonnet-5', lang: 'spa', obraUlt: '', porUlt: '',
+      hojaUrl: '', hojaClave: '', quien: '', autoSync: true
+    }, o.cfg || {});
   } catch (e) { console.warn('load', e); }
 }
 
@@ -1869,9 +1909,17 @@ function guardar(siguiente) {
   r.img_key = (iSel >= 0 && COLA[iSel]) ? COLA[iSel].key : '';
   r.img_ext = 'jpg';
 
+  r.capturado_por = S.cfg.quien || r.pagado_por || '';
+  r.sync = 'pendiente'; r.sync_error = '';
+
   if (editandoId) {
     const i = S.registros.findIndex(x => x.rid === editandoId);
-    if (i >= 0) { r.rid = editandoId; r.creado = S.registros[i].creado; r.img_key = r.img_key || S.registros[i].img_key; S.registros[i] = r; }
+    if (i >= 0) {
+      r.rid = editandoId; r.creado = S.registros[i].creado;
+      r.img_key = r.img_key || S.registros[i].img_key;
+      r.link = S.registros[i].link || '';
+      S.registros[i] = r;
+    }
     toast('Gasto actualizado.');
   } else {
     r.rid = uid(); r.creado = new Date().toISOString();
@@ -1882,6 +1930,7 @@ function guardar(siguiente) {
   }
   S.cfg.porUlt = r.pagado_por;
   save(); renderTodo();
+  if (S.cfg.autoSync && conectado() && navigator.onLine) setTimeout(() => sincronizar(true), 400);
 
   const obra = r.obra, por = r.pagado_por, forma = r.forma_pago, con = r.concepto;
   limpiarForm(false);
@@ -1963,7 +2012,11 @@ function renderRegistros() {
     kpi('Gastos mostrados', rs.length, S.registros.length + ' en total') +
     kpi('Suma', money(tot), rs.length ? 'promedio ' + money(tot / rs.length) : '') +
     kpi('Pendientes', pend.length, pend.length ? money(pend.reduce((s, r) => s + (+r.monto || 0), 0)) : 'todo pagado', pend.length ? 'alerta' : 'mudo') +
-    kpi('Sin foto', sinImg, sinImg ? 'no saldrán en el ZIP' : 'todos con comprobante', sinImg ? 'alerta' : 'mudo');
+    kpi(conectado() ? 'Sin enviar al maestro' : 'Sin foto',
+        conectado() ? rs.filter(r => r.sync !== 'ok').length : sinImg,
+        conectado() ? (rs.filter(r => r.sync !== 'ok').length ? 'faltan de subir' : 'todo en el maestro')
+                    : (sinImg ? 'no saldrán en el ZIP' : 'todos con comprobante'),
+        (conectado() ? rs.filter(r => r.sync !== 'ok').length : sinImg) ? 'alerta' : 'mudo');
 
   const t = $('#tReg');
   if (!rs.length) {
@@ -1980,7 +2033,7 @@ function renderRegistros() {
   }
   t.innerHTML = `<thead><tr>
       <th>Fecha</th><th>Obra</th><th>ID</th><th>Concepto</th><th>Descripción</th>
-      <th class="num">Monto</th><th>Pagó</th><th>Pagado a</th><th>Forma</th><th>Estatus</th><th>Comprobante</th><th></th>
+      <th class="num">Monto</th><th>Pagó</th><th>Pagado a</th><th>Forma</th><th>Estatus</th><th>Maestro</th><th></th>
     </tr></thead><tbody>` +
     rs.map(r => `<tr>
       <td data-l="Fecha">${fechaMX(r.fecha)}</td>
@@ -1993,7 +2046,10 @@ function renderRegistros() {
       <td data-l="Pagado a">${esc(r.pagado_a)}</td>
       <td data-l="Forma" class="mini">${esc(r.forma_pago)}</td>
       <td data-l="Estatus"><span class="tag t-${(r.estatus || '').toLowerCase()}">${esc(r.estatus)}</span></td>
-      <td data-l="Foto">${r.img_key ? 'Sí' : '<span class="mini">—</span>'}</td>
+      <td data-l="Maestro">${
+        r.sync === 'ok' ? '<span class="tag t-alta">Enviado</span>'
+        : r.sync === 'error' ? `<span class="tag t-baja" title="${esc(r.sync_error || '')}">Falló</span>`
+        : '<span class="tag t-nula">Pendiente</span>'}</td>
       <td data-l=""><button class="btn sm sec" data-ed="${r.rid}">Editar</button> <button class="btn sm gh" data-bo="${r.rid}">Borrar</button></td>
     </tr>`).join('') +
     `</tbody><tfoot><tr><td colspan="5" data-l="">TOTAL · ${rs.length} gastos</td><td class="num" data-l="Total">${money(tot)}</td><td colspan="6" data-l=""></td></tr></tfoot>`;
@@ -2236,6 +2292,117 @@ async function restaurar(file) {
 /* ---------------------------------------------------------------
    11. NAVEGACION E INICIO
    --------------------------------------------------------------- */
+/* ---------------------------------------------------------------
+   10b. SINCRONIZACIÓN CON EL MAESTRO EN GOOGLE SHEETS
+   La app captura sin señal. Cuando hay internet, empuja lo pendiente.
+   --------------------------------------------------------------- */
+const conectado = () => !!(S.cfg.hojaUrl && S.cfg.hojaClave);
+const pendientes = () => S.registros.filter(r => r.sync !== 'ok');
+
+async function llamarHoja(accion, datos, ms) {
+  if (!conectado()) throw new Error('Todavía no has conectado el maestro de Google Sheets.');
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms || 45000);
+  try {
+    const res = await fetch(S.cfg.hojaUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ accion, clave: S.cfg.hojaClave }, datos || {})),
+      redirect: 'follow'
+    });
+    if (!res.ok) throw new Error('El maestro respondió ' + res.status);
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || 'Error en el maestro');
+    return j;
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('El maestro no contestó. Revisa tu señal.');
+    if (/Failed to fetch|NetworkError|Load failed/i.test(e.message))
+      throw new Error('Sin conexión con el maestro. Se queda pendiente y lo reintento después.');
+    throw e;
+  } finally { clearTimeout(t); }
+}
+
+async function probarHoja() {
+  const b = $('#btnProbar'); b.disabled = true;
+  estadoSync('Probando la conexión…');
+  try {
+    const j = await llamarHoja('ping', {}, 20000);
+    estadoSync('');
+    toast('Conectado a "' + j.maestro + '" · ' + j.obras.length + ' obras · carpeta ' + j.carpeta);
+    renderTodo();
+  } catch (e) { estadoSync(''); toast(e.message, 'bad'); }
+  finally { b.disabled = false; }
+}
+
+/** Empuja los gastos pendientes, uno por uno para que aguante mala señal. */
+async function sincronizar(silencioso) {
+  if (!conectado()) { if (!silencioso) toast('Primero conecta el maestro en Exportar.', 'warn'); return; }
+  if (sincronizar._corriendo) return;
+  const cola = pendientes();
+  if (!cola.length) { if (!silencioso) toast('Todo está al día en el maestro.'); return; }
+
+  sincronizar._corriendo = true;
+  let bien = 0, mal = 0, ultimoError = '';
+  for (let i = 0; i < cola.length; i++) {
+    const r = cola[i];
+    estadoSync(`Enviando ${i + 1} de ${cola.length}…`);
+    try {
+      const g = Object.assign({}, r);
+      delete g.ocr_text;
+      g.capturado_por = r.capturado_por || S.cfg.quien || r.pagado_por || '';
+      if (r.img_key && !r.link) {
+        const du = await imgGet(r.img_key);
+        if (du) g.foto = { nombre: r.comprobante, base64: du.split(',')[1] };
+      }
+      const j = await llamarHoja('push', { gastos: [g] });
+      const out = (j.resultados || [])[0] || {};
+      if (out.ok) {
+        r.sync = 'ok'; r.sync_error = ''; r.link = out.link || r.link || '';
+        r.enviado = new Date().toISOString();
+        bien++;
+      } else {
+        r.sync = 'error'; r.sync_error = out.error || 'Error desconocido';
+        ultimoError = r.sync_error; mal++;
+      }
+    } catch (e) {
+      r.sync = 'error'; r.sync_error = e.message; ultimoError = e.message; mal++;
+      break;   // sin señal: no tiene caso seguir intentando
+    }
+  }
+  sincronizar._corriendo = false;
+  estadoSync('');
+  save(); renderTodo();
+  if (bien && !mal) toast(bien === 1 ? 'Gasto enviado al maestro.' : bien + ' gastos enviados al maestro.');
+  else if (bien && mal) toast(bien + ' enviados, ' + mal + ' quedaron pendientes. ' + ultimoError, 'warn');
+  else if (mal && !silencioso) toast('No se pudo enviar: ' + ultimoError, 'bad');
+}
+
+async function jalarCatalogos() {
+  try {
+    const j = await llamarHoja('catalogos', {}, 20000);
+    const c = j.catalogos;
+    if (!c || !(c.obras || []).length) {
+      await llamarHoja('sembrar', {
+        catalogos: {
+          obras: S.obras, conceptos: S.conceptos, pagadores: S.pagadores,
+          formas: S.formas, proveedores: S.proveedores
+        }
+      });
+      toast('Creé la hoja _Catálogos en el maestro con tus listas actuales.');
+      return;
+    }
+    S.obras = c.obras;
+    if ((c.conceptos || []).length) S.conceptos = c.conceptos;
+    if ((c.pagadores || []).length) S.pagadores = c.pagadores;
+    if ((c.formas || []).length) S.formas = c.formas;
+    if ((c.proveedores || []).length) S.proveedores = c.proveedores;
+    save(); llenarSelects(); sincObra(); renderTodo();
+    toast('Catálogos actualizados desde el maestro: ' + S.obras.length + ' obras.');
+  } catch (e) { toast(e.message, 'bad'); }
+}
+
+function estadoSync(t) { const e = $('#syncEstado'); if (e) e.textContent = t || ''; }
+
 const VISTAS = {
   cap: ['Capturar recibo', 'Foto, lectura y guardado en tres pasos', '', null],
   reg: ['Gastos registrados', 'Todo lo capturado, con filtros', 'Capturar otro', () => irA('cap')],
@@ -2270,8 +2437,18 @@ function renderTodo() {
   $('#quienSub').textContent = S.registros.length
     ? `${S.registros.length} gastos · ${money(tot)}`
     : 'Administración';
+  const st = $('#syncTag');
+  if (st) st.innerHTML = conectado()
+    ? (pendientes().length
+        ? `<span class="tag t-baja">${pendientes().length} sin enviar</span>`
+        : '<span class="tag t-alta">Al día</span>')
+    : '<span class="tag t-nula">Sin conectar</span>';
+  const bs = $('#btnSync');
+  if (bs) bs.textContent = pendientes().length ? `Enviar ${pendientes().length} pendientes` : 'Enviar pendientes';
   $('#estado').innerHTML = [
     `Gastos capturados: <b>${S.registros.length}</b>`,
+    `Maestro de Google Sheets: <b>${conectado() ? 'conectado' : 'sin conectar'}</b>`,
+    `Sin enviar al maestro: <b>${pendientes().length}</b>`,
     `Fotos guardadas: <b>${S.registros.filter(r => r.img_key).length}</b>`,
     `Almacenamiento de fotos: <b>${dbOk ? 'permanente (IndexedDB)' : 'solo esta sesión'}</b>`,
     `Proveedores en catálogo: <b>${S.proveedores.length}</b>`,
@@ -2395,6 +2572,27 @@ async function init() {
     limpiarVisor(); limpiarForm(true); save(); renderTodo(); renderCola();
     toast('Todo borrado.');
   };
+
+  // maestro de Google Sheets
+  $('#s_url').value = S.cfg.hojaUrl || '';
+  $('#s_clave').value = S.cfg.hojaClave || '';
+  $('#s_quien').value = S.cfg.quien || '';
+  $('#s_auto').value = S.cfg.autoSync ? '1' : '0';
+  const guardarHoja = () => {
+    S.cfg.hojaUrl = $('#s_url').value.trim();
+    S.cfg.hojaClave = $('#s_clave').value.trim();
+    S.cfg.quien = $('#s_quien').value.trim();
+    S.cfg.autoSync = $('#s_auto').value === '1';
+    save(); renderTodo();
+  };
+  $('#btnGuardarHoja').onclick = () => { guardarHoja(); toast('Conexión guardada.'); };
+  $('#btnProbar').onclick = () => { guardarHoja(); probarHoja(); };
+  $('#btnSync').onclick = () => { guardarHoja(); sincronizar(false); };
+  $('#btnCatalogos').onclick = () => { guardarHoja(); jalarCatalogos(); };
+  // al volver la señal, se manda solo lo que quedó pendiente
+  window.addEventListener('online', () => {
+    if (S.cfg.autoSync && conectado() && pendientes().length) sincronizar(true);
+  });
 
   // configuracion
   $('#s_key').value = S.cfg.key || '';
