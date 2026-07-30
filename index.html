@@ -1725,7 +1725,7 @@ function mostrarZona(txt) {
     b.onclick = () => { fn(); $('#mZona').classList.remove('on'); actualizarNombre(); };
     bx.appendChild(b);
   };
-  if (mejor) add('Monto: ' + money(mejor), () => { $('#f_monto').value = mejor.toFixed(2); marcarConf('Monto', 'alta'); }, true);
+  if (mejor) add('Monto: ' + money(mejor), () => { $('#f_monto').value = money(mejor); marcarConf('Monto', 'alta'); }, true);
   if (f) add('Fecha: ' + fechaMX(f.value), () => { $('#f_fecha').value = f.value; marcarConf('Fecha', 'alta'); }, !mejor);
   const limpio = txt.replace(/\s+/g, ' ').trim().slice(0, 70);
   if (limpio) {
@@ -1842,7 +1842,7 @@ function interpretar(desdeOcr) {
 function aplicarDatos(d, sobrescribir) {
   const set = (sel, v) => { if (v !== '' && v != null && (sobrescribir || !$(sel).value)) $(sel).value = v; };
   set('#f_fecha', d.fecha);
-  if (d.monto !== '' && d.monto != null) set('#f_monto', Number(d.monto).toFixed(2));
+  if (d.monto !== '' && d.monto != null) set('#f_monto', money(Number(d.monto)));
   set('#f_a', d.proveedor);
   set('#f_desc', d.descripcion);
   if (d.concepto && S.conceptos.some(c => c.toLowerCase() === String(d.concepto).toLowerCase())) set('#f_concepto', d.concepto);
@@ -1990,7 +1990,7 @@ async function editar(rid) {
   $('#f_obra').value = r.obra; sincObra();
   $('#f_id').value = r.id_operacion; $('#f_concepto').value = r.concepto;
   $('#f_desc').value = r.descripcion; $('#f_fecha').value = r.fecha;
-  $('#f_monto').value = Number(r.monto).toFixed(2); $('#f_por').value = r.pagado_por;
+  $('#f_monto').value = money(Number(r.monto)); $('#f_por').value = r.pagado_por;
   $('#f_a').value = r.pagado_a; $('#f_forma').value = r.forma_pago;
   $('#f_linea').value = r.linea_pago; $('#f_aut').value = r.autorizado_por;
   $('#f_estatus').value = r.estatus; $('#f_com').value = r.comentario || '';
@@ -2581,6 +2581,14 @@ async function init() {
   // formulario
   $('#f_obra').onchange = sincObra;
   ['#f_a', '#f_desc'].forEach(s => $(s).addEventListener('input', actualizarNombre));
+  $('#f_monto').addEventListener('focus', () => {
+    const n = parseFloat(String($('#f_monto').value).replace(/[$,\s]/g, ''));
+    $('#f_monto').value = isFinite(n) ? String(n) : '';
+  });
+  $('#f_monto').addEventListener('blur', () => {
+    const n = parseFloat(String($('#f_monto').value).replace(/[$,\s]/g, ''));
+    $('#f_monto').value = isFinite(n) ? money(n) : '';
+  });
   $('#btnSave').onclick = () => guardar(false);
   $('#btnSaveNext').onclick = () => guardar(true);
   $('#btnReset').onclick = () => limpiarForm(false);
