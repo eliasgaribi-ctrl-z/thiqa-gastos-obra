@@ -115,6 +115,12 @@ nav{padding:8px 0;flex:1;overflow-y:auto}
 .split{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:16px;align-items:start}
 .mitad{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
 @media(max-width:1100px){.split{grid-template-columns:1fr}}
+
+/* captura: foto y formulario visibles a la vez */
+@media(min-width:1101px){
+  .capgrid{display:grid;grid-template-columns:minmax(340px,420px) minmax(0,1fr);gap:16px;align-items:start}
+  .capgrid .capimg{position:sticky;top:calc(var(--topbarH, 80px) + 16px)}
+}
 @media(max-width:820px){.g2,.g3,.g4,.mitad{grid-template-columns:1fr}}
 @media(min-width:821px) and (max-width:1200px){.g4{grid-template-columns:1fr 1fr}}
 
@@ -309,6 +315,8 @@ tfoot td.num{font-size:15px}
 .modal ol{padding-left:22px;font-size:14px;line-height:1.8;color:var(--tx);margin:14px 0}
 .modal ol b{color:var(--azul)}
 .zt{background:var(--auto);border:1px solid var(--borde);padding:12px;font-family:ui-monospace,Menlo,monospace;font-size:13px;white-space:pre-wrap;margin-bottom:14px;max-height:180px;overflow:auto}
+.modal .box.ancho{max-width:900px;padding:14px}
+.modal .box.ancho img{width:100%;height:auto;display:block;max-height:82vh;object-fit:contain}
 
 /* ---------------- pasos numerados ---------------- */
 .paso{background:var(--blanco);border:1px solid var(--borde);margin-bottom:16px}
@@ -325,6 +333,10 @@ tfoot td.num{font-size:15px}
 .paso .cuerpo{padding:18px}
 .paso .cuerpo.p0{padding:0}
 .paso.apagado{opacity:.5;pointer-events:none}
+
+/* miniatura del recibo fija junto al formulario, para comparar mientras se llena */
+#paso3>header{position:sticky;top:var(--topbarH, 80px);z-index:40}
+.miniFoto{width:38px;height:38px;flex:0 0 38px;object-fit:cover;border:1px solid var(--borde);cursor:zoom-in;background:var(--auto)}
 
 /* ---------------- secciones plegables ---------------- */
 details.det{border-top:1px solid var(--borde)}
@@ -429,6 +441,8 @@ label.f.err input,label.f.err select{border-color:var(--naranja);box-shadow:inse
     </div>
   </div>
 
+  <div class="capgrid" id="capGrid">
+  <div class="capimg">
   <!-- PASO 2 -->
   <div class="paso" id="paso2">
     <header>
@@ -479,11 +493,14 @@ label.f.err input,label.f.err select{border-color:var(--naranja);box-shadow:inse
       </div>
     </details>
   </div>
+  </div><!-- /capimg -->
 
+  <div class="capform">
   <!-- PASO 3 -->
   <div class="paso" id="paso3">
     <header>
       <div class="n"><span>3</span></div>
+      <img class="miniFoto" id="miniFoto" alt="Foto del recibo actual" hidden>
       <h3>Revisar y guardar</h3>
       <div class="st" id="editInfo"></div>
     </header>
@@ -555,6 +572,8 @@ label.f.err input,label.f.err select{border-color:var(--naranja);box-shadow:inse
       <button class="btn gh" id="btnReset">Limpiar formulario</button>
     </div>
   </div>
+  </div><!-- /capform -->
+  </div><!-- /capgrid -->
 </section>
 
 <!-- ================= REGISTROS ================= -->
@@ -757,6 +776,13 @@ label.f.err input,label.f.err select{border-color:var(--naranja);box-shadow:inse
   <div class="aviso">La primera vez que uses <b>Leer recibo</b> necesitas internet: se descarga el motor de OCR (unos 15&nbsp;MB) y queda guardado. Despu&eacute;s funciona sin se&ntilde;al.</div>
   <div class="sep"></div>
   <button class="btn pri blk" id="btnCerrarAyuda">Entendido</button>
+</div></div>
+
+<div class="modal" id="mFoto"><div class="box ancho">
+  <img id="mFotoImg" alt="Foto del recibo en grande">
+  <div class="row" style="margin-top:12px">
+    <button class="btn gh" id="btnCerrarFoto">Cerrar</button>
+  </div>
 </div></div>
 
 <script>
@@ -1496,11 +1522,24 @@ function limpiarVisor() {
   $('#hintDrag').style.display = 'none';
   $('#paso2').classList.remove('listo');
   ['#btnOcrAll', '#btnOcrZone', '#btnVision', '#btnRot', '#btnBw', '#btnClear'].forEach(s => $(s).disabled = true);
+  actualizarMiniFoto();
+}
+
+/* miniatura junto al formulario (paso 3), para comparar la foto sin perder de vista los campos */
+function actualizarMiniFoto() {
+  const c = iSel >= 0 ? COLA[iSel] : null;
+  const mf = $('#miniFoto');
+  if (c) { mf.src = c.dataUrl; mf.hidden = false; } else { mf.hidden = true; mf.removeAttribute('src'); }
 }
 
 function elegirImagen(i) {
   iSel = i; sel = null; rot = 0; bw = false;
   const c = COLA[i]; if (!c) return limpiarVisor();
+  // al saltar a otro recibo de la cola (y no estar editando uno ya guardado)
+  // se limpian los campos para no arrastrar por error los datos del recibo anterior
+  const esCapturaNueva = !editandoId;
+  if (esCapturaNueva) limpiarForm(false);
+  actualizarMiniFoto();
   const im = new Image();
   im.onload = () => {
     IMG = im;
@@ -1509,6 +1548,7 @@ function elegirImagen(i) {
     $('#hintDrag').style.display = '';
     ['#btnOcrAll', '#btnOcrZone', '#btnVision', '#btnRot', '#btnBw', '#btnClear'].forEach(s => $(s).disabled = false);
     $('#btnOcrZone').disabled = true;
+    if (esCapturaNueva && !c.done) ocrTodo();
   };
   im.src = c.dataUrl;
   renderCola();
@@ -2472,12 +2512,20 @@ function modalZona() {
   $('#zCancel').onclick = () => d.classList.remove('on');
 }
 
+function ajustarTopbarH() {
+  const h = Math.ceil($('.topbar').getBoundingClientRect().height);
+  document.documentElement.style.setProperty('--topbarH', h + 'px');
+}
+
 async function init() {
   load();
   await openDB();
   modalZona();
   llenarSelects();
   sincObra();
+
+  ajustarTopbarH();
+  window.addEventListener('resize', ajustarTopbarH);
 
   if (!dbOk) {
     $('#storeWarn').innerHTML = `<div class="aviso">Este navegador no guarda las fotos de forma permanente. Los datos del formulario sí quedan, pero <b>descarga el ZIP o el respaldo antes de cerrar</b> para no perder las imágenes. Se recomienda Chrome.</div>`;
@@ -2489,6 +2537,14 @@ async function init() {
   $('#btnAyuda').onclick = () => $('#mAyuda').classList.add('on');
   $('#btnCerrarAyuda').onclick = () => $('#mAyuda').classList.remove('on');
   $('#mAyuda').onclick = e => { if (e.target.id === 'mAyuda') $('#mAyuda').classList.remove('on'); };
+
+  $('#miniFoto').onclick = () => {
+    if (iSel < 0 || !COLA[iSel]) return;
+    $('#mFotoImg').src = COLA[iSel].dataUrl;
+    $('#mFoto').classList.add('on');
+  };
+  $('#btnCerrarFoto').onclick = () => $('#mFoto').classList.remove('on');
+  $('#mFoto').onclick = e => { if (e.target.id === 'mFoto') $('#mFoto').classList.remove('on'); };
 
   // pestañas de estatus
   $('#fltabs').onclick = e => {
